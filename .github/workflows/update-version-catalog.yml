@@ -154,9 +154,10 @@ jobs:
           format: "a.b.c"
       - name: Get Minecraft Version
         id: minecraft
-        run: |
-          echo "minecraft_version=${{ inputs.minecraft_version }}" >> "$GITHUB_OUTPUT"
+        uses: TwelveIterations/get-minecraft-version@v1
         continue-on-error: true
+        with:
+          version: "${{ inputs.minecraft_version }}"
       - name: Get Fabric API Version
         id: fabric-api
         uses: TwelveIterations/get-fabric-api-version@v1
