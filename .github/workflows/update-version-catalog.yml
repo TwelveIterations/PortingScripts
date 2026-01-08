@@ -31,6 +31,74 @@ on:
         required: true
       AUTOMATIONS_PRIVATE_KEY:
         required: true
+    outputs:
+      updated:
+        description: 'Whether the catalog was updated'
+        value: ${{ jobs.update-version-catalog.outputs.updated }}
+      minecraft_version:
+        description: 'Minecraft Version'
+        value: ${{ jobs.update-version-catalog.outputs.minecraft_version }}
+      minecraft_updated:
+        description: 'Whether Minecraft version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.minecraft_updated }}
+      fabric_api_updated:
+        description: 'Whether Fabric API version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.fabric_api_updated }}
+      fabric_api_present:
+        description: 'Whether Fabric API version is present'
+        value: ${{ jobs.update-version-catalog.outputs.fabric_api_present }}
+      fabric_loader_updated:
+        description: 'Whether Fabric Loader version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.fabric_loader_updated }}
+      fabric_loader_present:
+        description: 'Whether Fabric Loader version is present'
+        value: ${{ jobs.update-version-catalog.outputs.fabric_loader_present }}
+      neoform_updated:
+        description: 'Whether NeoForm version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.neoform_updated }}
+      neoform_present:
+        description: 'Whether NeoForm version is present'
+        value: ${{ jobs.update-version-catalog.outputs.neoform_present }}
+      neoforge_updated:
+        description: 'Whether NeoForge version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.neoforge_updated }}
+      neoforge_present:
+        description: 'Whether NeoForge version is present'
+        value: ${{ jobs.update-version-catalog.outputs.neoforge_present }}
+      forge_updated:
+        description: 'Whether Forge version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.forge_updated }}
+      forge_present:
+        description: 'Whether Forge version is present'
+        value: ${{ jobs.update-version-catalog.outputs.forge_present }}
+      balm_updated:
+        description: 'Whether Balm version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.balm_updated }}
+      balm_present:
+        description: 'Whether Balm version is present'
+        value: ${{ jobs.update-version-catalog.outputs.balm_present }}
+      fabric_api_version:
+        description: 'Fabric API Version'
+        value: ${{ jobs.update-version-catalog.outputs.fabric_api_version }}
+      fabric_loader_version:
+        description: 'Fabric Loader Version'
+        value: ${{ jobs.update-version-catalog.outputs.fabric_loader_version }}
+      neoform_version:
+        description: 'NeoForm Version'
+        value: ${{ jobs.update-version-catalog.outputs.neoform_version }}
+      neoforge_version:
+        description: 'NeoForge Version'
+        value: ${{ jobs.update-version-catalog.outputs.neoforge_version }}
+      forge_version:
+        description: 'Forge Version'
+        value: ${{ jobs.update-version-catalog.outputs.forge_version }}
+      balm_version:
+        description: 'Balm Version'
+        value: ${{ jobs.update-version-catalog.outputs.balm_version }}
+      java_version:
+        description: 'Java Version'
+        value: ${{ jobs.update-version-catalog.outputs.java_version }}
+      
 
 jobs:
   update-version-catalog:
@@ -38,6 +106,7 @@ jobs:
     environment: ${{ inputs.environment }}
     outputs:
       updated: ${{ steps.update-catalog.outputs.updated }}
+      minecraft_version: ${{ steps.update-catalog.outputs.minecraft_version }}
       minecraft_updated: ${{ steps.update-catalog.outputs.minecraft_updated }}
       fabric_api_updated: ${{ steps.update-catalog.outputs.fabric_api_updated }}
       fabric_api_present: ${{ steps.update-catalog.outputs.fabric_api_present }}
@@ -51,7 +120,6 @@ jobs:
       forge_present: ${{ steps.update-catalog.outputs.forge_present }}
       balm_updated: ${{ steps.update-catalog.outputs.balm_updated }}
       balm_present: ${{ steps.update-catalog.outputs.balm_present }}
-      minecraft_version: ${{ steps.update-catalog.outputs.minecraft_version }}
       fabric_api_version: ${{ steps.fabric-api.outputs.version }}
       fabric_loader_version: ${{ steps.fabric-loader.outputs.version }}
       neoform_version: ${{ steps.neoform.outputs.version }}
