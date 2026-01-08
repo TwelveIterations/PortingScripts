@@ -119,7 +119,7 @@ jobs:
       forge_present: ${{ steps.update-catalog.outputs.forge_present }}
       balm_updated: ${{ steps.update-catalog.outputs.balm_updated }}
       balm_present: ${{ steps.update-catalog.outputs.balm_present }}
-      minecraft_version: ${{ steps.minecraft.outputs.minecraft_version }}
+      minecraft_version: ${{ steps.minecraft.outputs.version }}
       fabric_api_version: ${{ steps.fabric-api.outputs.version }}
       fabric_loader_version: ${{ steps.fabric-loader.outputs.version }}
       neoform_version: ${{ steps.neoform.outputs.version }}
@@ -173,7 +173,7 @@ jobs:
         uses: TwelveIterations/get-neoform-version@v1
         continue-on-error: true
         with:
-          version: "${{ steps.minecraft.outputs.minecraft_version }}-*"
+          version: "${{ steps.minecraft.outputs.version }}-*"
       - name: Get NeoForge Version
         id: neoforge
         uses: TwelveIterations/get-neoforge-version@v1
@@ -218,8 +218,8 @@ jobs:
           # TODO This should use get-minecraft-version to get the proper latest version for the branch
           if grep -q "^\s*minecraft\s*=" gradle/libs.versions.toml; then
             current_minecraft=$(grep "^\s*minecraft\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-            if [ "$current_minecraft" != "${{ steps.minecraft.outputs.minecraft_version }}" ]; then
-              sed -i 's|^\s*minecraft\s*=\s*".*"|minecraft = "${{ steps.minecraft.outputs.minecraft_version }}"|' gradle/libs.versions.toml
+            if [ "$current_minecraft" != "${{ steps.minecraft.outputs.version }}" ]; then
+              sed -i 's|^\s*minecraft\s*=\s*".*"|minecraft = "${{ steps.minecraft.outputs.version }}"|' gradle/libs.versions.toml
               minecraft_updated=true
             fi
           fi
