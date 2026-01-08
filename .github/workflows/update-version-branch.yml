@@ -69,7 +69,7 @@ jobs:
       - name: Check if migration branch is missing
         id: check-migration-branch
         run: |
-          MIGRATION_BRANCH="automations/update-version-branch-${{ github.run_number }}"
+          MIGRATION_BRANCH="automations/update-version-branch-${{ needs.ensure-version-branch.outputs.version_branch }}"
           echo "migration_branch=$MIGRATION_BRANCH" >> "$GITHUB_OUTPUT"
           if ! git ls-remote --exit-code --heads origin "$MIGRATION_BRANCH"; then
             echo "migration_branch_missing=true" >> "$GITHUB_OUTPUT"
@@ -117,8 +117,8 @@ jobs:
           echo "Updating Gradle properties..."
 
           # Set the version to <minecraftVersion>.0 (if it's not already starting with <minecraftVersion>)
-          if ! grep -q "^\s*version\s*=\s*${{ env.MINECRAFT_VERSION }}" gradle.properties; then
-            sed -i 's|^\s*version\s*=\s*[^#]*|version = "${{ env.MINECRAFT_VERSION }}.0"|' gradle.properties
+          if ! grep -q "^\s*version\s*=\s*${{ needs.update-version-catalog.outputs.minecraft_version }}" gradle.properties; then
+            sed -i 's|^\s*version\s*=\s*[^#]*|version = "${{ needs.update-version-catalog.outputs.minecraft_version }}.0"|' gradle.properties
           fi
 
           # Set the java_version to the version required by this Minecraft version
@@ -134,7 +134,7 @@ jobs:
           if ! git diff --quiet; then
             git add .
             git commit -m "Update Gradle properties"
-            git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
+            git push --force origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
           fi
 
   create-pull-request:
@@ -156,10 +156,12 @@ jobs:
           VERSION_BRANCH="${{ needs.ensure-version-branch.outputs.version_branch }}"
           MIGRATION_BRANCH="${{ needs.ensure-migration-branch.outputs.migration_branch }}"
           
-          # Create pull request using GitHub CLI
-          gh pr create \
-            --title "Update Branch for Minecraft $VERSION_BRANCH" \
-            --body "## Update Branch for Minecraft $VERSION_BRANCH
+          # Check if PR already exists
+          if gh pr list --base "$VERSION_BRANCH" --head "$MIGRATION_BRANCH" --json number | jq length | grep -q 0; then
+            # Create pull request using GitHub CLI
+            gh pr create \
+              --title "Update Branch for Minecraft $VERSION_BRANCH" \
+              --body "## Update Branch for Minecraft $VERSION_BRANCH
           
           This PR updates build properties and dependencies for Minecraft $VERSION_BRANCH:
           
@@ -170,7 +172,10 @@ jobs:
           
           ---
           This PR was automatically created by the Update Version Branch workflow." \
-            --base "$VERSION_BRANCH" \
-            --head "$MIGRATION_BRANCH"
+              --base "$VERSION_BRANCH" \
+              --head "$MIGRATION_BRANCH"
+          else
+            echo "PR already exists, skipping creation"
+          fi
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
