@@ -3,7 +3,7 @@ name: Update Version Branch
 on:
   workflow_call:
     inputs:
-      minecraftVersion:
+      minecraft_version:
         description: 'Minecraft Version'
         required: true
         type: string
@@ -30,7 +30,7 @@ jobs:
       - name: Check if version branch is missing
         id: check-version-branch
         run: |
-          VERSION_BRANCH="${{ inputs.minecraftVersion }}"
+          VERSION_BRANCH="${{ inputs.minecraft_version }}"
           echo "version_branch=$VERSION_BRANCH" >> "$GITHUB_OUTPUT"
           if ! git ls-remote --exit-code --heads origin "$VERSION_BRANCH"; then
             echo "version_branch_missing=true" >> "$GITHUB_OUTPUT"
