@@ -80,7 +80,7 @@ jobs:
     needs: ensure-migration-branch
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
     with:
-      ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       commit_directly: true
       update_plugins: true
     secrets:
