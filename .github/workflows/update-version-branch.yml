@@ -128,12 +128,12 @@ jobs:
           fi
 
           # Set the java_version to the version required by this Minecraft version
-          sed -i 's|\s*java_version\s*=\s*[^#]*|java_version = "${{ needs.update-version-catalog.outputs.java_version }}"|' gradle.properties
+          sed -i 's|\s*java_version\s*=\s*[^#]*|java_version = ${{ needs.update-version-catalog.outputs.java_version }}|' gradle.properties
 
           # Set include_fabric, include_neoforge, include_forge based on whether the version was present
-          sed -i 's|\s*include_fabric\s*=\s*[^#]*|include_fabric = "${{ needs.update-version-catalog.outputs.fabric_api_present }}"|' gradle.properties
-          sed -i 's|\s*include_neoforge\s*=\s*[^#]*|include_neoforge = "${{ needs.update-version-catalog.outputs.neoforge_present }}"|' gradle.properties
-          sed -i 's|\s*include_forge\s*=\s*[^#]*|include_forge = "${{ needs.update-version-catalog.outputs.forge_present }}"|' gradle.properties
+          sed -i 's|\s*include_fabric\s*=\s*[^#]*|include_fabric = ${{ needs.update-version-catalog.outputs.fabric_api_present }}|' gradle.properties
+          sed -i 's|\s*include_neoforge\s*=\s*[^#]*|include_neoforge = ${{ needs.update-version-catalog.outputs.neoforge_present }}|' gradle.properties
+          sed -i 's|\s*include_forge\s*=\s*[^#]*|include_forge = ${{ needs.update-version-catalog.outputs.forge_present }}|' gradle.properties
       - name: Commit and push changes
         if: always()
         run: |
