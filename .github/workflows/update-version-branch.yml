@@ -112,22 +112,28 @@ jobs:
         with:
           token: ${{ steps.configure-git.outputs.token }}
           ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      - name: Normalize Minecraft Version
+        id: normalize-minecraft-version
+        uses: TwelveIterations/bump-version@v1
+        with:
+          version: "${{ needs.update-version-catalog.outputs.minecraft_version }}"
+          format: "a.b.c"
       - name: Update Gradle properties
         run: |
           echo "Updating Gradle properties..."
 
           # Set the version to <minecraftVersion>.0 (if it's not already starting with <minecraftVersion>)
-          if ! grep -q "^\s*version\s*=\s*${{ needs.update-version-catalog.outputs.minecraft_version }}" gradle.properties; then
-            sed -i 's|^\s*version\s*=\s*[^#]*|version = "${{ needs.update-version-catalog.outputs.minecraft_version }}.0"|' gradle.properties
+          if ! grep -q "^\s*version\s*=\s*${{ steps.normalize-minecraft-version.outputs.version }}" gradle.properties; then
+            sed -i 's|^\s*version\s*=\s*[^#]*|version = ${{ steps.normalize-minecraft-version.outputs.version }}.0|' gradle.properties
           fi
 
           # Set the java_version to the version required by this Minecraft version
-          sed -i 's|\s*java_version\s*=\s*".*"|java_version = "${{ needs.update-version-catalog.outputs.java_version }}"|' gradle.properties
+          sed -i 's|\s*java_version\s*=\s*[^#]*|java_version = "${{ needs.update-version-catalog.outputs.java_version }}"|' gradle.properties
 
           # Set include_fabric, include_neoforge, include_forge based on whether the version was present
-          sed -i 's|\s*include_fabric\s*=\s*".*"|include_fabric = "${{ needs.update-version-catalog.outputs.fabric_api_present }}"|' gradle.properties
-          sed -i 's|\s*include_neoforge\s*=\s*".*"|include_neoforge = "${{ needs.update-version-catalog.outputs.neoforge_present }}"|' gradle.properties
-          sed -i 's|\s*include_forge\s*=\s*".*"|include_forge = "${{ needs.update-version-catalog.outputs.forge_present }}"|' gradle.properties
+          sed -i 's|\s*include_fabric\s*=\s*[^#]*|include_fabric = "${{ needs.update-version-catalog.outputs.fabric_api_present }}"|' gradle.properties
+          sed -i 's|\s*include_neoforge\s*=\s*[^#]*|include_neoforge = "${{ needs.update-version-catalog.outputs.neoforge_present }}"|' gradle.properties
+          sed -i 's|\s*include_forge\s*=\s*[^#]*|include_forge = "${{ needs.update-version-catalog.outputs.forge_present }}"|' gradle.properties
       - name: Commit and push changes
         if: always()
         run: |
