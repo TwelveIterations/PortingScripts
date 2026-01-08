@@ -106,7 +106,6 @@ jobs:
     environment: ${{ inputs.environment }}
     outputs:
       updated: ${{ steps.update-catalog.outputs.updated }}
-      minecraft_version: ${{ steps.update-catalog.outputs.minecraft_version }}
       minecraft_updated: ${{ steps.update-catalog.outputs.minecraft_updated }}
       fabric_api_updated: ${{ steps.update-catalog.outputs.fabric_api_updated }}
       fabric_api_present: ${{ steps.update-catalog.outputs.fabric_api_present }}
@@ -120,6 +119,7 @@ jobs:
       forge_present: ${{ steps.update-catalog.outputs.forge_present }}
       balm_updated: ${{ steps.update-catalog.outputs.balm_updated }}
       balm_present: ${{ steps.update-catalog.outputs.balm_present }}
+      minecraft_version: ${{ steps.minecraft.outputs.minecraft_version }}
       fabric_api_version: ${{ steps.fabric-api.outputs.version }}
       fabric_loader_version: ${{ steps.fabric-loader.outputs.version }}
       neoform_version: ${{ steps.neoform.outputs.version }}
