@@ -7,6 +7,11 @@ on:
         description: 'Minecraft Version'
         required: true
         type: string
+      environment:
+        description: 'Environment'
+        required: false
+        type: string
+        default: Automations
     secrets:
       AUTOMATIONS_APP_ID:
         required: true
@@ -16,6 +21,7 @@ on:
 jobs:
   ensure-version-branch:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Authenticate GitHub App
         id: configure-git
@@ -47,6 +53,7 @@ jobs:
   ensure-migration-branch:
     needs: ensure-version-branch
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Authenticate GitHub App
         id: configure-git
@@ -90,6 +97,7 @@ jobs:
   update-gradle-properties:
     needs: [ensure-migration-branch, update-version-catalog]
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Authenticate GitHub App
         id: configure-git
@@ -130,6 +138,7 @@ jobs:
   create-pull-request:
     needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties]
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     if: always() && needs.ensure-migration-branch.result == 'success'
     steps:
       - uses: actions/create-github-app-token@v2
