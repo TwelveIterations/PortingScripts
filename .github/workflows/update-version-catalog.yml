@@ -98,7 +98,9 @@ on:
       java_version:
         description: 'Java Version'
         value: ${{ jobs.update-version-catalog.outputs.java_version }}
-      
+      loom_version:
+        description: 'Loom Version'
+        value: ${{ jobs.update-version-catalog.outputs.loom_version }}
 
 jobs:
   update-version-catalog:
@@ -127,6 +129,7 @@ jobs:
       forge_version: ${{ steps.forge.outputs.version }}
       balm_version: ${{ steps.balm.outputs.version }}
       java_version: 25
+      loom_version: 1.14-SNAPSHOT
     steps:
       - uses: actions/create-github-app-token@v2
         id: app-token
