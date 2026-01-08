@@ -84,11 +84,12 @@ jobs:
       migration_branch: ${{ steps.check-migration-branch.outputs.migration_branch }}
 
   update-version-catalog:
-    needs: ensure-migration-branch
+    needs: [ensure-version-branch, ensure-migration-branch]
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       environment: ${{ inputs.environment }}
+      minecraft_version: ${{ needs.ensure-version-branch.outputs.version_branch }}
       commit_directly: true
       update_plugins: true
     secrets:
