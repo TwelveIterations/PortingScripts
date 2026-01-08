@@ -152,15 +152,15 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - name: Create Pull Request
         run: |
-          TARGET_BRANCH="${{ needs.ensure-version-branch.outputs.target_branch }}"
+          VERSION_BRANCH="${{ needs.ensure-version-branch.outputs.version_branch }}"
           MIGRATION_BRANCH="${{ needs.ensure-migration-branch.outputs.migration_branch }}"
           
           # Create pull request using GitHub CLI
           gh pr create \
-            --title "Update Branch for Minecraft $TARGET_BRANCH" \
-            --body "## Update Branch for Minecraft $TARGET_BRANCH
+            --title "Update Branch for Minecraft $VERSION_BRANCH" \
+            --body "## Update Branch for Minecraft $VERSION_BRANCH
           
-          This PR updates build properties and dependencies for Minecraft $TARGET_BRANCH:
+          This PR updates build properties and dependencies for Minecraft $VERSION_BRANCH:
           
           - **Version Catalog Updates**: Updated dependency versions
           - **Gradle Properties**: Updated project version and Java version
@@ -169,7 +169,7 @@ jobs:
           
           ---
           This PR was automatically created by the Update Version Branch workflow." \
-            --base "$TARGET_BRANCH" \
+            --base "$VERSION_BRANCH" \
             --head "$MIGRATION_BRANCH"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
