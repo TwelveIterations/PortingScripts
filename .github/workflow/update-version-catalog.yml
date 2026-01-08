@@ -1,0 +1,272 @@
+name: Update Version Catalog
+
+on:
+  workflow_call:
+    inputs:
+      commit_directly:
+        description: 'Commit directly'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      AUTOMATIONS_APP_ID:
+        required: true
+      AUTOMATIONS_PRIVATE_KEY:
+        required: true
+
+jobs:
+  update-version-catalog:
+    runs-on: ubuntu-latest
+    environment: Automations
+    env:
+      MINECRAFT_VERSION: ${{ github.ref_name }}
+    outputs:
+      updated: ${{ steps.update-catalog.outputs.updated }}
+      minecraft_updated: ${{ steps.update-catalog.outputs.minecraft_updated }}
+      fabric_api_updated: ${{ steps.update-catalog.outputs.fabric_api_updated }}
+      fabric_api_present: ${{ steps.update-catalog.outputs.fabric_api_present }}
+      fabric_loader_updated: ${{ steps.update-catalog.outputs.fabric_loader_updated }}
+      fabric_loader_present: ${{ steps.update-catalog.outputs.fabric_loader_present }}
+      neoform_updated: ${{ steps.update-catalog.outputs.neoform_updated }}
+      neoform_present: ${{ steps.update-catalog.outputs.neoform_present }}
+      neoforge_updated: ${{ steps.update-catalog.outputs.neoforge_updated }}
+      neoforge_present: ${{ steps.update-catalog.outputs.neoforge_present }}
+      forge_updated: ${{ steps.update-catalog.outputs.forge_updated }}
+      forge_present: ${{ steps.update-catalog.outputs.forge_present }}
+      balm_updated: ${{ steps.update-catalog.outputs.balm_updated }}
+      balm_present: ${{ steps.update-catalog.outputs.balm_present }}
+      minecraft_version: ${{ env.MINECRAFT_VERSION }}
+      fabric_api_version: ${{ steps.fabric-api.outputs.version }}
+      fabric_loader_version: ${{ steps.fabric-loader.outputs.version }}
+      neoform_version: ${{ steps.neoform.outputs.version }}
+      neoforge_version: ${{ steps.neoforge.outputs.version }}
+      forge_version: ${{ steps.forge.outputs.version }}
+      balm_version: ${{ steps.balm.outputs.version }}
+      java_version: 25
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - run: |
+          git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+      - name: Normalize Minecraft Version
+        id: normalize-minecraft-version
+        uses: TwelveIterations/bump-version@v1
+        with:
+          version: "${{ github.ref_name }}"
+          format: "a.b.c"
+      - name: Get Fabric API Version
+        id: fabric-api
+        uses: TwelveIterations/get-fabric-api-version@v1
+        continue-on-error: true
+        with:
+          minecraftVersion: "${{ env.MINECRAFT_VERSION }}"
+      - name: Get Fabric Loader Version
+        id: fabric-loader
+        uses: TwelveIterations/get-fabric-loader-version@v1
+        continue-on-error: true
+      - name: Get NeoForm Version
+        id: neoform
+        uses: TwelveIterations/get-neoform-version@v1
+        continue-on-error: true
+        with:
+          version: "${{ env.MINECRAFT_VERSION }}-*"
+      - name: Get NeoForge Version
+        id: neoforge
+        uses: TwelveIterations/get-neoforge-version@v1
+        continue-on-error: true
+        with:
+          version: "${{ steps.normalize-minecraft-version.outputs.version }}.*"
+      - name: Get Forge Version
+        id: forge
+        uses: TwelveIterations/get-forge-version@v1
+        continue-on-error: true
+        with:
+          minecraftVersion: "${{ env.MINECRAFT_VERSION }}"
+          channel: "latest"
+      - name: Get Balm Version
+        id: balm
+        uses: TwelveIterations/get-nexus-version@v1
+        continue-on-error: true
+        with:
+          nexusUrl: 'https://maven.twelveiterations.com'
+          repository: 'maven-releases'
+          groupId: 'net.blay09.mods'
+          artifactId: 'balm-common'
+          version: '${{ steps.normalize-minecraft-version.outputs.version }}.*'
+      - name: Update version catalog
+        run: |
+          # Initialize update flags
+          minecraft_updated=false
+          fabric_api_updated=false
+          fabric_api_present=false
+          fabric_loader_updated=false
+          fabric_loader_present=false
+          neoform_updated=false
+          neoform_present=false
+          neoforge_updated=false
+          neoforge_present=false
+          forge_updated=false
+          forge_present=false
+          balm_updated=false
+          balm_present=false
+          
+          # Update Minecraft Version
+          # TODO This should use get-minecraft-version to get the proper latest version for the branch
+          if grep -q "^\s*minecraft\s*=" gradle/libs.versions.toml; then
+            current_minecraft=$(grep "^\s*minecraft\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+            if [ "$current_minecraft" != "${{ env.MINECRAFT_VERSION }}" ]; then
+              sed -i 's|^\s*minecraft\s*=\s*".*"|minecraft = "${{ env.MINECRAFT_VERSION }}"|' gradle/libs.versions.toml
+              minecraft_updated=true
+            fi
+          fi
+          
+          # Update Fabric API
+          if [ -n "${{ steps.fabric-api.outputs.version }}" ]; then
+            fabric_api_present=true
+            if grep -q "^\s*fabricApi\s*=" gradle/libs.versions.toml; then
+              current_fabric_api=$(grep "^\s*fabricApi\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$current_fabric_api" != "${{ steps.fabric-api.outputs.version }}" ]; then
+                sed -i 's|^\s*fabricApi\s*=\s*".*"|fabricApi = "${{ steps.fabric-api.outputs.version }}"|' gradle/libs.versions.toml
+                fabric_api_updated=true
+              fi
+            fi
+          fi
+          
+          # Update Fabric Loader
+          if [ -n "${{ steps.fabric-loader.outputs.version }}" ]; then
+            fabric_loader_present=true
+            if grep -q "^\s*fabricLoader\s*=" gradle/libs.versions.toml; then
+              current_fabric_loader=$(grep "^\s*fabricLoader\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$current_fabric_loader" != "${{ steps.fabric-loader.outputs.version }}" ]; then
+                sed -i 's|^\s*fabricLoader\s*=\s*".*"|fabricLoader = "${{ steps.fabric-loader.outputs.version }}"|' gradle/libs.versions.toml
+                fabric_loader_updated=true
+              fi
+            fi
+          fi
+          
+          # Update NeoForm
+          if [ -n "${{ steps.neoform.outputs.version }}" ]; then
+            neoform_present=true
+            if grep -q "^\s*neoForm\s*=" gradle/libs.versions.toml; then
+              current_neoform=$(grep "^\s*neoForm\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$current_neoform" != "${{ steps.neoform.outputs.version }}" ]; then
+                sed -i 's|^\s*neoForm\s*=\s*".*"|neoForm = "${{ steps.neoform.outputs.version }}"|' gradle/libs.versions.toml
+                neoform_updated=true
+              fi
+            fi
+          fi
+          
+          # Update NeoForge
+          if [ -n "${{ steps.neoforge.outputs.version }}" ]; then
+            neoforge_present=true
+            if grep -q "^\s*neoForge\s*=" gradle/libs.versions.toml; then
+              current_neoforge=$(grep "^\s*neoForge\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$current_neoforge" != "${{ steps.neoforge.outputs.version }}" ]; then
+                sed -i 's|^\s*neoForge\s*=\s*".*"|neoForge = "${{ steps.neoforge.outputs.version }}"|' gradle/libs.versions.toml
+                neoforge_updated=true
+              fi
+            fi
+          fi
+          
+          # Update Forge
+          if [ -n "${{ steps.forge.outputs.version }}" ]; then
+            forge_present=true
+            if grep -q "^\s*forge\s*=" gradle/libs.versions.toml; then
+              current_forge=$(grep "^\s*forge\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$current_forge" != "${{ steps.forge.outputs.version }}" ]; then
+                sed -i 's|^\s*forge\s*=\s*".*"|forge = "${{ steps.forge.outputs.version }}"|' gradle/libs.versions.toml
+                forge_updated=true
+              fi
+            fi
+          fi
+          
+          # Update Balm
+          if [ -n "${{ steps.balm.outputs.version }}" ]; then
+            balm_present=true
+            if grep -q "^\s*balm\s*=" gradle/libs.versions.toml; then
+              current_balm=$(grep "^\s*balm\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
+              if [ "$current_balm" != "${{ steps.balm.outputs.version }}" ]; then
+                sed -i 's|^\s*balm\s*=\s*".*"|balm = "${{ steps.balm.outputs.version }}"|' gradle/libs.versions.toml
+                balm_updated=true
+              fi
+            fi
+          fi
+
+          # TODO Update Loom, ModDevGradle, but it should be optional (e.g. "update_plugins" input)
+
+          # Check if there are changes
+          if git diff --quiet gradle/libs.versions.toml; then
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          fi
+          
+          # Output individual update flags
+          echo "minecraft_updated=${minecraft_updated}" >> "$GITHUB_OUTPUT"
+          echo "fabric_api_updated=${fabric_api_updated}" >> "$GITHUB_OUTPUT"
+          echo "fabric_api_present=${fabric_api_present}" >> "$GITHUB_OUTPUT"
+          echo "fabric_loader_updated=${fabric_loader_updated}" >> "$GITHUB_OUTPUT"
+          echo "fabric_loader_present=${fabric_loader_present}" >> "$GITHUB_OUTPUT"
+          echo "neoform_updated=${neoform_updated}" >> "$GITHUB_OUTPUT"
+          echo "neoform_present=${neoform_present}" >> "$GITHUB_OUTPUT"
+          echo "neoforge_updated=${neoforge_updated}" >> "$GITHUB_OUTPUT"
+          echo "neoforge_present=${neoforge_present}" >> "$GITHUB_OUTPUT"
+          echo "forge_updated=${forge_updated}" >> "$GITHUB_OUTPUT"
+          echo "forge_present=${forge_present}" >> "$GITHUB_OUTPUT"
+          echo "balm_updated=${balm_updated}" >> "$GITHUB_OUTPUT"
+          echo "balm_present=${balm_present}" >> "$GITHUB_OUTPUT"
+        id: update-catalog
+      - name: Create Pull Request
+        if: steps.update-catalog.outputs.updated == 'true' && inputs.commit_directly == false
+        run: |
+          # Create and checkout branch
+          git checkout -b automations/version-catalog-${{ github.run_number }}
+          
+          # Add and commit changes
+          git add gradle/libs.versions.toml
+          git commit -m "Update version catalog"
+          
+          # Push branch to remote
+          git push origin automations/version-catalog-${{ github.run_number }}
+          
+          # Create pull request using GitHub CLI
+          gh pr create \
+            --title "Update version catalog" \
+            --body "## Version Catalog Updates
+            
+          This PR updates the version catalog to use the following versions:
+          - **Fabric API**: ${{ steps.fabric-api.outputs.version }}
+          - **Fabric Loader**: ${{ steps.fabric-loader.outputs.version }}
+          - **NeoForm**: ${{ steps.neoform.outputs.version }}
+          - **NeoForge**: ${{ steps.neoforge.outputs.version }}
+          - **Forge**: ${{ steps.forge.outputs.version }}
+          - **Balm**: ${{ steps.balm.outputs.version }}
+          
+          This PR was automatically created by the Update Version Catalog workflow." \
+            --base ${{ github.ref_name }} \
+            --head automations/version-catalog-${{ github.run_number }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Commit and push directly
+        if: steps.update-catalog.outputs.updated == 'true' && inputs.commit_directly == true
+        run: |
+          git add gradle/libs.versions.toml
+          git commit -m "Update version catalog"
+          git push origin ${{ github.ref_name }}
+      - name: No update needed
+        if: steps.update-catalog.outputs.updated == 'false'
+        run: |
+          echo "Version catalog is already up to date"

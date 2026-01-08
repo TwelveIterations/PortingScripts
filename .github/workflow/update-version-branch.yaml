@@ -1,0 +1,164 @@
+name: Update Version Branch
+
+on:
+  workflow_call:
+    inputs:
+      minecraftVersion:
+        description: 'Minecraft Version'
+        required: true
+        type: string
+    secrets:
+      AUTOMATIONS_APP_ID:
+        required: true
+      AUTOMATIONS_PRIVATE_KEY:
+        required: true
+
+jobs:
+  ensure-version-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate GitHub App
+        id: configure-git
+        uses: ./.github/actions/configure-git
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.configure-git.outputs.token }}
+      - name: Check if version branch is missing
+        id: check-version-branch
+        run: |
+          VERSION_BRANCH="${{ inputs.minecraftVersion }}"
+          echo "version_branch=$VERSION_BRANCH" >> "$GITHUB_OUTPUT"
+          if ! git ls-remote --exit-code --heads origin "$VERSION_BRANCH"; then
+            echo "version_branch_missing=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create version branch
+        id: create-version-branch
+        if: steps.check-version-branch.outputs.version_branch_missing == 'true'
+        run: |
+          git checkout -b "${{ steps.check-version-branch.outputs.version_branch }}"
+          git push origin "${{ steps.check-version-branch.outputs.version_branch }}"
+    outputs:
+      version_branch: ${{ steps.check-version-branch.outputs.version_branch }}
+
+  ensure-migration-branch:
+    needs: ensure-version-branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate GitHub App
+        id: configure-git
+        uses: ./.github/actions/configure-git
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.configure-git.outputs.token }}
+          ref: ${{ needs.ensure-version-branch.outputs.version_branch }}
+      - name: Check if migration branch is missing
+        id: check-migration-branch
+        run: |
+          MIGRATION_BRANCH="automations/update-version-branch-${{ github.run_number }}"
+          echo "migration_branch=$MIGRATION_BRANCH" >> "$GITHUB_OUTPUT"
+          if ! git ls-remote --exit-code --heads origin "$MIGRATION_BRANCH"; then
+            echo "migration_branch_missing=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create migration branch
+        id: create-migration-branch
+        if: steps.check-migration-branch.outputs.migration_branch_missing == 'true'
+        run: |
+          git checkout -b "${{ steps.check-migration-branch.outputs.migration_branch }}"
+          git push origin "${{ steps.check-migration-branch.outputs.migration_branch }}"
+    outputs:
+      migration_branch: ${{ steps.check-migration-branch.outputs.migration_branch }}
+
+  update-version-catalog:
+    needs: ensure-migration-branch
+    uses: ./.github/workflows/update-version-catalog.yml
+    with:
+      ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      commit_directly: true
+      update_plugins: true
+    secrets:
+      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
+      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+
+  update-gradle-properties:
+    needs: [ensure-migration-branch, update-version-catalog]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate GitHub App
+        id: configure-git
+        uses: ./.github/actions/configure-git
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.configure-git.outputs.token }}
+          ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      - name: Update Gradle properties
+        run: |
+          echo "Updating Gradle properties..."
+
+          # Set the version to <minecraftVersion>.0 (if it's not already starting with <minecraftVersion>)
+          if ! grep -q "^\s*version\s*=\s*${{ env.MINECRAFT_VERSION }}" gradle.properties; then
+            sed -i 's|^\s*version\s*=\s*[^#]*|version = "${{ env.MINECRAFT_VERSION }}.0"|' gradle.properties
+          fi
+
+          # Set the java_version to the version required by this Minecraft version
+          sed -i 's|\s*java_version\s*=\s*".*"|java_version = "${{ needs.update-version-catalog.outputs.java_version }}"|' gradle.properties
+
+          # Set include_fabric, include_neoforge, include_forge based on whether the version was present
+          sed -i 's|\s*include_fabric\s*=\s*".*"|include_fabric = "${{ needs.update-version-catalog.outputs.fabric_api_present }}"|' gradle.properties
+          sed -i 's|\s*include_neoforge\s*=\s*".*"|include_neoforge = "${{ needs.update-version-catalog.outputs.neoforge_present }}"|' gradle.properties
+          sed -i 's|\s*include_forge\s*=\s*".*"|include_forge = "${{ needs.update-version-catalog.outputs.forge_present }}"|' gradle.properties
+      - name: Commit and push changes
+        if: always()
+        run: |
+          if ! git diff --quiet; then
+            git add .
+            git commit -m "Update Gradle properties"
+            git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
+          fi
+
+  create-pull-request:
+    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties]
+    runs-on: ubuntu-latest
+    if: always() && needs.ensure-migration-branch.result == 'success'
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Create Pull Request
+        run: |
+          TARGET_BRANCH="${{ needs.ensure-version-branch.outputs.target_branch }}"
+          MIGRATION_BRANCH="${{ needs.ensure-migration-branch.outputs.migration_branch }}"
+          
+          # Create pull request using GitHub CLI
+          gh pr create \
+            --title "Update Branch for Minecraft $TARGET_BRANCH" \
+            --body "## Update Branch for Minecraft $TARGET_BRANCH
+          
+          This PR updates build properties and dependencies for Minecraft $TARGET_BRANCH:
+          
+          - **Version Catalog Updates**: Updated dependency versions
+          - **Gradle Properties**: Updated project version and Java version
+          
+          Please review all changes carefully before merging.
+          
+          ---
+          This PR was automatically created by the Update Version Branch workflow." \
+            --base "$TARGET_BRANCH" \
+            --head "$MIGRATION_BRANCH"
