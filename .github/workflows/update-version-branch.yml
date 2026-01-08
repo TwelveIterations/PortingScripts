@@ -140,7 +140,6 @@ jobs:
     needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    if: always() && needs.ensure-migration-branch.result == 'success'
     steps:
       - uses: actions/create-github-app-token@v2
         id: app-token
@@ -172,3 +171,5 @@ jobs:
           This PR was automatically created by the Update Version Branch workflow." \
             --base "$TARGET_BRANCH" \
             --head "$MIGRATION_BRANCH"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
