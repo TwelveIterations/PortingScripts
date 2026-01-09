@@ -187,7 +187,7 @@ jobs:
       AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
 
   create-pull-request:
-    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties, apply-patches]
+    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties, apply-patches, apply-rewrite]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
