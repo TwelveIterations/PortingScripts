@@ -1,0 +1,29 @@
+name: 'Run Hook Scripts'
+description: 'Runs hook scripts for a given migration job'
+inputs:
+  hooks-directory:
+    description: 'Directory containing hook scripts (relative to repository root)'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Hook Scripts
+      shell: bash
+      run: |
+        HOOK_DIR="${{ inputs.hooks-directory }}"
+        
+        if [ -d "$HOOK_DIR" ]; then
+          for script in "$HOOK_DIR"/*.sh; do
+            if [ -f "$script" ] && [ -x "$script" ]; then
+              echo "Running $(basename "$script")"
+              "$script"
+            elif [ -f "$script" ]; then
+              echo "Making $(basename "$script") executable"
+              chmod +x "$script"
+              echo "Running $(basename "$script")"
+              "$script"
+            fi
+          done
+        else
+          echo "No hook directory found at: $HOOK_DIR"
+        fi

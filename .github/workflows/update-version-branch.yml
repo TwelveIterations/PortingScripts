@@ -95,9 +95,13 @@ jobs:
       - name: Create migration branch
         id: create-migration-branch
         if: steps.check-migration-branch.outputs.migration_branch_missing == 'true'
-        run: |
-          git checkout -b "${{ steps.check-migration-branch.outputs.migration_branch }}"
-          git push origin "${{ steps.check-migration-branch.outputs.migration_branch }}"
+        run: git checkout -b "${{ steps.check-migration-branch.outputs.migration_branch }}"
+      - name: Run pre migration hooks
+        uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
+        with:
+          hooks-directory: ${{ format('migrations/{0}/hooks/pre', inputs.minecraft_version) }}
+      - name: Push migration branch
+        run: git push origin "${{ steps.check-migration-branch.outputs.migration_branch }}"
     outputs:
       migration_branch: ${{ steps.check-migration-branch.outputs.migration_branch }}
 
