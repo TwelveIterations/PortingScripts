@@ -160,7 +160,7 @@ jobs:
             git add .
             if ! git diff --cached --quiet; then
               git commit -m "Apply migration patches"
-              git push --force origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
+              git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
             fi
           fi
           
@@ -233,7 +233,7 @@ jobs:
           if ! git diff --quiet; then
             git add .
             git commit -m "Update Gradle properties"
-            git push --force origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
+            git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
           fi
 
   create-pull-request:
