@@ -192,7 +192,7 @@ jobs:
       failed_patches: ${{ steps.apply-patches.outputs.failed_patches }}
 
   update-version-catalog:
-    needs: [ensure-version-branch, ensure-migration-branch]
+    needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
