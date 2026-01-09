@@ -137,6 +137,8 @@ jobs:
           echo "        }" >> recipes-repo/rewrite.gradle
           echo "    }" >> recipes-repo/rewrite.gradle
           echo "}" >> recipes-repo/rewrite.gradle
+
+          cat recipes-repo/rewrite.gradle
           
           # Run Gradle rewrite task if we have recipes
           if [ -n "$ACTIVE_RECIPES" ]; then
