@@ -142,14 +142,13 @@ jobs:
           
           # Run Gradle rewrite task if we have recipes
           if [ -n "$ACTIVE_RECIPES" ]; then
-            if ./gradlew rewriteRun --init-script=recipes-repo/rewrite.gradle -Drewrite.activeRecipe="$ACTIVE_RECIPES"; then
-              # Commit any changes made by rewrite (excluding recipes-repo)
-              git add .
-              git reset HEAD recipes-repo 2>/dev/null || true
-              if ! git diff --cached --quiet; then
-                git commit -m "Apply automated code migrations"
-                git push origin "${{ inputs.branch }}"
-              fi
+            ./gradlew rewriteRun --init-script=recipes-repo/rewrite.gradle -Drewrite.activeRecipe="$ACTIVE_RECIPES"
+            # Commit any changes made by rewrite (excluding recipes-repo)
+            git add .
+            git reset HEAD recipes-repo 2>/dev/null || true
+            if ! git diff --cached --quiet; then
+              git commit -m "Apply automated code migrations"
+              git push origin "${{ inputs.branch }}"
             fi
           else
             echo "No active recipes found, skipping rewrite"
