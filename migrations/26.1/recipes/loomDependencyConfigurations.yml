@@ -18,3 +18,13 @@ recipeList:
     artifactId: "*"
     configuration: modRuntimeOnly
     newConfiguration: runtimeOnly
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modApi
+    newConfiguration: api
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modLocalRuntime
+    newConfiguration: localRuntime

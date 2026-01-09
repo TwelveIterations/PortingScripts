@@ -21,6 +21,15 @@ on:
         description: 'Directory containing git patches (relative to patches_repository root)'
         required: false
         type: string
+      recipes_repository:
+        description: 'Repository containing recipes (format: owner/repo)'
+        required: false
+        type: string
+        default: TwelveIterations/PortingScripts
+      recipes_directory:
+        description: 'Directory containing recipes (relative to recipes_repository root)'
+        required: false
+        type: string
     secrets:
       AUTOMATIONS_APP_ID:
         required: true
@@ -92,7 +101,6 @@ jobs:
     outputs:
       migration_branch: ${{ steps.check-migration-branch.outputs.migration_branch }}
 
-
   apply-patches:
     needs: [ensure-version-branch, ensure-migration-branch]
     uses: TwelveIterations/PortingScripts/.github/workflows/apply-patches.yml@v1
@@ -100,13 +108,25 @@ jobs:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       environment: ${{ inputs.environment }}
       patches_repository: ${{ inputs.patches_repository }}
-      patches_directory: ${{ inputs.patches_directory }}
+      patches_directory: ${{ inputs.patches_directory || format('migrations/{0}/patches', inputs.minecraft_version) }}
+    secrets:
+      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
+      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+
+  apply-rewrite:
+    needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
+    uses: TwelveIterations/PortingScripts/.github/workflows/apply-rewrite.yml@v1
+    with:
+      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      environment: ${{ inputs.environment }}
+      recipes_repository: ${{ inputs.recipes_repository }}
+      recipes_directory: ${{ inputs.recipes_directory || format('migrations/{0}/recipes', inputs.minecraft_version) }}
     secrets:
       AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
       AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
 
   update-version-catalog:
-    needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
+    needs: [ensure-version-branch, ensure-migration-branch, apply-patches, apply-rewrite]
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
