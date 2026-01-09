@@ -1,0 +1,143 @@
+name: Apply Rewrite
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch to apply recipes to'
+        required: true
+        type: string
+      environment:
+        description: 'Environment'
+        required: false
+        type: string
+        default: Automations
+      recipes_repository:
+        description: 'Repository containing recipes (format: owner/repo)'
+        required: false
+        type: string
+        default: TwelveIterations/PortingScripts
+      recipes_directory:
+        description: 'Directory containing recipes (relative to recipes_repository root)'
+        required: false
+        type: string
+    secrets:
+      AUTOMATIONS_APP_ID:
+        required: true
+      AUTOMATIONS_PRIVATE_KEY:
+        required: true
+
+jobs:
+  apply-recipes:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Authenticate GitHub App
+        id: configure-git
+        uses: TwelveIterations/PortingScripts/.github/actions/configure-git@v1
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.configure-git.outputs.token }}
+          ref: ${{ inputs.branch }}
+      - name: Checkout repository for recipes
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.recipes_repository }}
+          token: ${{ steps.configure-git.outputs.token }}
+          path: recipes-repo
+          ref: v1
+      - name: Apply recipes
+        id: apply-recipes
+        run: |
+          RECIPES_DIR="recipes-repo/${{ inputs.recipes_directory }}"
+          if [ ! -d "$RECIPES_DIR" ]; then
+            echo "No recipes directory found at $RECIPES_DIR"
+            echo "recipes=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "Looking for recipes in: $RECIPES_DIR"
+          
+          # Find all recipe files
+          RECIPE_FILES=$(find "$RECIPES_DIR" -name "*.yml" -type f | sort)
+          
+          if [ -z "$RECIPE_FILES" ]; then
+            echo "No recipe files found in $RECIPES_DIR"
+            echo "recipes=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "Found recipe files:"
+          echo "$RECIPE_FILES"
+          
+          # OpenRewrite needs a single rewrite.yml file with all recipes
+          echo "" > recipes-repo/rewrite.yml
+          
+          ACTIVE_RECIPES=""
+          
+          for recipe_file in $RECIPE_FILES; do
+            recipe_name=$(basename "$recipe_file")
+            
+            echo "---" >> recipes-repo/rewrite.yml
+            cat "$recipe_file" >> recipes-repo/rewrite.yml
+            echo "" >> recipes-repo/rewrite.yml
+            
+            # Extract recipe name from YAML file
+            extracted_name=$(grep "^name:" "$recipe_file" | cut -d: -f2- | sed 's/^ *//' | tr -d '\r\n')
+            if [ -n "$extracted_name" ]; then
+              if [ -z "$ACTIVE_RECIPES" ]; then
+                ACTIVE_RECIPES="$extracted_name"
+              else
+                ACTIVE_RECIPES="$ACTIVE_RECIPES,$extracted_name"
+              fi
+            fi
+          done
+          
+          echo "Active recipes: $ACTIVE_RECIPES"
+          
+          # Create rewrite.gradle init script. Kinda ugly but there's no standalone CLI for OpenRewrite.
+          echo "initscript {" > recipes-repo/rewrite.gradle
+          echo "    repositories {" >> recipes-repo/rewrite.gradle
+          echo "        gradlePluginPortal()" >> recipes-repo/rewrite.gradle
+          echo "    }" >> recipes-repo/rewrite.gradle
+          echo "    dependencies {" >> recipes-repo/rewrite.gradle
+          echo "        classpath 'org.openrewrite:plugin:latest.release'" >> recipes-repo/rewrite.gradle
+          echo "    }" >> recipes-repo/rewrite.gradle
+          echo "}" >> recipes-repo/rewrite.gradle
+          echo "" >> recipes-repo/rewrite.gradle
+          echo "rootProject {" >> recipes-repo/rewrite.gradle
+          echo "    plugins.apply(org.openrewrite.gradle.RewritePlugin)" >> recipes-repo/rewrite.gradle
+          echo "    dependencies {" >> recipes-repo/rewrite.gradle
+          echo "        rewrite("org.openrewrite.recipe:rewrite-gradle:latest.release")" >> recipes-repo/rewrite.gradle
+          echo "    }" >> recipes-repo/rewrite.gradle
+          echo "    afterEvaluate {" >> recipes-repo/rewrite.gradle
+          echo "        if (repositories.isEmpty()) {" >> recipes-repo/rewrite.gradle
+          echo "            repositories {" >> recipes-repo/rewrite.gradle
+          echo "                mavenCentral()" >> recipes-repo/rewrite.gradle
+          echo "            }" >> recipes-repo/rewrite.gradle
+          echo "        }" >> recipes-repo/rewrite.gradle
+          echo "    }" >> recipes-repo/rewrite.gradle
+          echo "}" >> recipes-repo/rewrite.gradle
+          
+          # Run Gradle rewrite task if we have recipes
+          if [ -n "$ACTIVE_RECIPES" ]; then
+            if ./gradlew rewriteRun --init-script=recipes-repo/rewrite.gradle -Drewrite.activeRecipe="$ACTIVE_RECIPES"; then
+              # Commit any changes made by rewrite (excluding recipes-repo)
+              git add .
+              git reset HEAD recipes-repo 2>/dev/null || true
+              if ! git diff --cached --quiet; then
+                git commit -m "Apply automated code migrations"
+                git push origin "${{ inputs.branch }}"
+              fi
+            fi
+          else
+            echo "No active recipes found, skipping rewrite"
+          fi
+
+          echo "recipes=$ACTIVE_RECIPES" >> "$GITHUB_OUTPUT"
+    outputs:
+      recipes: ${{ steps.apply-recipes.outputs.recipes }}
