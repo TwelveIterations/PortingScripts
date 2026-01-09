@@ -50,10 +50,23 @@ jobs:
           token: ${{ steps.configure-git.outputs.token }}
           path: recipes-repo
           ref: v1
+      - name: Determine Recipe Directory
+        id: determine-recipe-dir
+        run: |
+          if [ -n "${{ inputs.recipes_directory }}" ]; then
+            echo "recipes_directory=${{ inputs.recipes_directory }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "recipes_directory=migrations/${{ inputs.minecraft_version }}/recipes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Convert IntelliJ Migration Maps to OpenRewrite
+        uses: TwelveIterations/intellij-to-openrewrite@v1
+        with:
+          input_directory: ${{ steps.determine-recipe-dir.outputs.recipes_directory }}
+          output_directory: ${{ steps.determine-recipe-dir.outputs.recipes_directory }}
       - name: Apply recipes
         id: apply-recipes
         run: |
-          RECIPES_DIR="recipes-repo/${{ inputs.recipes_directory }}"
+          RECIPES_DIR="recipes-repo/${{ steps.determine-recipe-dir.outputs.recipes_directory }}"
           if [ ! -d "$RECIPES_DIR" ]; then
             echo "No recipes directory found at $RECIPES_DIR"
             echo "recipes=" >> "$GITHUB_OUTPUT"
