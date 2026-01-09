@@ -172,7 +172,9 @@ jobs:
           
           # Commit any successfully applied patches
           if [ -n "$SUCCEEDED_PATCHES" ]; then
+            # Add all changes but exclude the patches-repo directory
             git add .
+            git reset HEAD patches-repo 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply migration patches"
               git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
