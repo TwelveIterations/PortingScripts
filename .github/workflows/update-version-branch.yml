@@ -12,8 +12,13 @@ on:
         required: false
         type: string
         default: Automations
+      patches_repository:
+        description: 'Repository containing patches (format: owner/repo)'
+        required: false
+        type: string
+        default: TwelveIterations/PortingScripts
       patches_directory:
-        description: 'Directory containing git patches (relative to repository root)'
+        description: 'Directory containing git patches (relative to patches_repository root)'
         required: false
         type: string
     secrets:
@@ -104,6 +109,13 @@ jobs:
         with:
           token: ${{ steps.configure-git.outputs.token }}
           ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      - name: Checkout PortingScripts repository for patches
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.patches_repository }}
+          token: ${{ steps.configure-git.outputs.token }}
+          path: patches-repo
+          ref: v1
       - name: Apply git patches
         id: apply-patches
         run: |
@@ -111,17 +123,20 @@ jobs:
           if [ -z "$PATCHES_DIR" ]; then
             PATCHES_DIR="migrations/${{ needs.ensure-version-branch.outputs.version_branch }}/patches"
           fi
-          SUCCEEDED_PATCHES=""
-          FAILED_PATCHES=""
           
-          echo "Looking for patches in: $PATCHES_DIR"
-          
-          if [ ! -d "$PATCHES_DIR" ]; then
-            echo "No patches directory found at $PATCHES_DIR"
+          PATCHES_REPO_DIR="patches-repo/$PATCHES_DIR"
+          if [ ! -d "$PATCHES_REPO_DIR" ]; then
+            echo "No patches directory found at $PATCHES_REPO_DIR"
             echo "succeeded_patches=" >> "$GITHUB_OUTPUT"
             echo "failed_patches=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          PATCHES_DIR="$PATCHES_REPO_DIR"
+          
+          SUCCEEDED_PATCHES=""
+          FAILED_PATCHES=""
+          
+          echo "Looking for patches in: $PATCHES_DIR"
           
           # Find all patch files
           PATCH_FILES=$(find "$PATCHES_DIR" -name "*.patch" -type f | sort)
