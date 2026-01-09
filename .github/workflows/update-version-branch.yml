@@ -95,103 +95,15 @@ jobs:
 
   apply-patches:
     needs: [ensure-version-branch, ensure-migration-branch]
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    steps:
-      - name: Authenticate GitHub App
-        id: configure-git
-        uses: TwelveIterations/PortingScripts/.github/actions/configure-git@v1
-        with:
-          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
-          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ steps.configure-git.outputs.token }}
-          ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
-      - name: Checkout PortingScripts repository for patches
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ inputs.patches_repository }}
-          token: ${{ steps.configure-git.outputs.token }}
-          path: patches-repo
-          ref: v1
-      - name: Apply git patches
-        id: apply-patches
-        run: |
-          PATCHES_DIR="${{ inputs.patches_directory }}"
-          if [ -z "$PATCHES_DIR" ]; then
-            PATCHES_DIR="migrations/${{ needs.ensure-version-branch.outputs.version_branch }}/patches"
-          fi
-          
-          PATCHES_REPO_DIR="patches-repo/$PATCHES_DIR"
-          if [ ! -d "$PATCHES_REPO_DIR" ]; then
-            echo "No patches directory found at $PATCHES_REPO_DIR"
-            echo "succeeded_patches=" >> "$GITHUB_OUTPUT"
-            echo "failed_patches=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          PATCHES_DIR="$PATCHES_REPO_DIR"
-          
-          SUCCEEDED_PATCHES=""
-          FAILED_PATCHES=""
-          
-          echo "Looking for patches in: $PATCHES_DIR"
-          
-          # Find all patch files
-          PATCH_FILES=$(find "$PATCHES_DIR" -name "*.patch" -type f | sort)
-          
-          if [ -z "$PATCH_FILES" ]; then
-            echo "No patch files found in $PATCHES_DIR"
-            echo "succeeded_patches=" >> "$GITHUB_OUTPUT"
-            echo "failed_patches=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          
-          echo "Found patch files:"
-          echo "$PATCH_FILES"
-          
-          # Apply each patch
-          for patch_file in $PATCH_FILES; do
-            patch_name=$(basename "$patch_file")
-            echo "Applying patch: $patch_name"
-            
-            if git apply --check "$patch_file" 2>/dev/null; then
-              if git apply "$patch_file"; then
-                echo "✓ Successfully applied: $patch_name"
-                SUCCEEDED_PATCHES="$SUCCEEDED_PATCHES$patch_name\n"
-              else
-                echo "✗ Failed to apply: $patch_name"
-                FAILED_PATCHES="$FAILED_PATCHES$patch_name\n"
-              fi
-            else
-              echo "✗ Patch does not apply cleanly: $patch_name"
-              FAILED_PATCHES="$FAILED_PATCHES$patch_name\n"
-            fi
-          done
-          
-          # Commit any successfully applied patches
-          if [ -n "$SUCCEEDED_PATCHES" ]; then
-            # Add all changes but exclude the patches-repo directory
-            git add .
-            git reset HEAD patches-repo 2>/dev/null || true
-            if ! git diff --cached --quiet; then
-              git commit -m "Apply migration patches"
-              git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
-            fi
-          fi
-          
-          # Output results for PR description
-          echo "succeeded_patches<<EOF" >> "$GITHUB_OUTPUT"
-          echo -e "$SUCCEEDED_PATCHES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-          
-          echo "failed_patches<<EOF" >> "$GITHUB_OUTPUT"
-          echo -e "$FAILED_PATCHES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-    outputs:
-      succeeded_patches: ${{ steps.apply-patches.outputs.succeeded_patches }}
-      failed_patches: ${{ steps.apply-patches.outputs.failed_patches }}
+    uses: TwelveIterations/PortingScripts/.github/workflows/apply-patches.yml@v1
+    with:
+      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      environment: ${{ inputs.environment }}
+      patches_repository: ${{ inputs.patches_repository }}
+      patches_directory: ${{ inputs.patches_directory }}
+    secrets:
+      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
+      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
 
   update-version-catalog:
     needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
@@ -276,8 +188,8 @@ jobs:
           if gh pr list --base "$VERSION_BRANCH" --head "$MIGRATION_BRANCH" --json number | jq length | grep -q 0; then
             # Build patch results section
             PATCH_RESULTS=""
-            SUCCEEDED_PATCHES="${{ needs.apply-patches.outputs.succeeded_patches }}"
-            FAILED_PATCHES="${{ needs.apply-patches.outputs.failed_patches }}"
+            SUCCEEDED_PATCHES="${{ needs.apply-patches.outputs.apply-patches.outputs.succeeded_patches }}"
+            FAILED_PATCHES="${{ needs.apply-patches.outputs.apply-patches.outputs.failed_patches }}"
             
             if [ -n "$SUCCEEDED_PATCHES" ] || [ -n "$FAILED_PATCHES" ]; then
               PATCH_RESULTS="## Migration Patches
