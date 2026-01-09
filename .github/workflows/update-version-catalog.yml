@@ -101,6 +101,15 @@ on:
       loom_version:
         description: 'Loom Version'
         value: ${{ jobs.update-version-catalog.outputs.loom_version }}
+      mdg_version:
+        description: 'MDG Version'
+        value: ${{ jobs.update-version-catalog.outputs.mdg_version }}
+      mdg_updated:
+        description: 'Whether the ModDevGradle version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.mdg_updated }}
+      mdg_present:
+        description: 'Whether a ModDevGradle version is present'
+        value: ${{ jobs.update-version-catalog.outputs.mdg_present }}
 
 jobs:
   update-version-catalog:
@@ -126,6 +135,9 @@ jobs:
       fabric_loader_version: ${{ steps.fabric-loader.outputs.version }}
       neoform_version: ${{ steps.neoform.outputs.version }}
       neoforge_version: ${{ steps.neoforge.outputs.version }}
+      mdg_version: ${{ steps.mdg.outputs.version }}
+      mdg_updated: ${{ steps.update-mdg.outputs.updated }}
+      mdg_present: ${{ steps.mdg.outputs.version != '' }}
       forge_version: ${{ steps.forge.outputs.version }}
       balm_version: ${{ steps.balm.outputs.version }}
       java_version: 25
@@ -183,6 +195,14 @@ jobs:
         continue-on-error: true
         with:
           version: "${{ steps.normalize-minecraft-version.outputs.version }}.*"
+      - name: Get ModDevGradle Version
+        id: mdg
+        if: inputs.update_plugins == 'true'
+        uses: TwelveIterations/get-neoforged-version@v1
+        continue-on-error: true
+        with:
+          artifact: moddev-gradle
+          version: "2.*"
       - name: Get Forge Version
         id: forge
         uses: TwelveIterations/get-forge-version@v1
@@ -200,6 +220,13 @@ jobs:
           groupId: 'net.blay09.mods'
           artifactId: 'balm-common'
           version: '${{ steps.normalize-minecraft-version.outputs.version }}.*'
+      - name: Update MDG
+        id: update-mdg
+        if: steps.mdg.outputs.version != '' && inputs.update_plugins == 'true'
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.neoforged.moddev
+          version: ${{ steps.mdg.outputs.version }}
       - name: Update version catalog
         run: |
           # Initialize update flags
