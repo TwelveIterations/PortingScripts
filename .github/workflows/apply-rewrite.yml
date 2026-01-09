@@ -119,15 +119,16 @@ jobs:
           echo "        gradlePluginPortal()" >> recipes-repo/rewrite.gradle
           echo "    }" >> recipes-repo/rewrite.gradle
           echo "    dependencies {" >> recipes-repo/rewrite.gradle
-          echo "        classpath 'org.openrewrite:plugin:latest.release'" >> recipes-repo/rewrite.gradle
+          echo "        classpath('org.openrewrite:plugin:latest.release')" >> recipes-repo/rewrite.gradle
           echo "    }" >> recipes-repo/rewrite.gradle
           echo "}" >> recipes-repo/rewrite.gradle
           echo "" >> recipes-repo/rewrite.gradle
           echo "rootProject {" >> recipes-repo/rewrite.gradle
           echo "    plugins.apply(org.openrewrite.gradle.RewritePlugin)" >> recipes-repo/rewrite.gradle
           echo "    dependencies {" >> recipes-repo/rewrite.gradle
-          echo "        rewrite("org.openrewrite.recipe:rewrite-gradle:latest.release")" >> recipes-repo/rewrite.gradle
+          echo "        rewrite('org.openrewrite.recipe:rewrite-gradle:latest.release')" >> recipes-repo/rewrite.gradle
           echo "    }" >> recipes-repo/rewrite.gradle
+          echo "" >> recipes-repo/rewrite.gradle
           echo "    afterEvaluate {" >> recipes-repo/rewrite.gradle
           echo "        if (repositories.isEmpty()) {" >> recipes-repo/rewrite.gradle
           echo "            repositories {" >> recipes-repo/rewrite.gradle
