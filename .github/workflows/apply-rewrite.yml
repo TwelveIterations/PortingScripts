@@ -21,6 +21,11 @@ on:
         description: 'Directory containing recipes (relative to recipes_repository root)'
         required: false
         type: string
+      java_version:
+        description: 'Java Version'
+        required: false
+        type: string
+        default: '25'
     secrets:
       AUTOMATIONS_APP_ID:
         required: true
@@ -43,6 +48,8 @@ jobs:
         with:
           token: ${{ steps.configure-git.outputs.token }}
           ref: ${{ inputs.branch }}
+      - name: Validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v5
       - name: Checkout repository for recipes
         uses: actions/checkout@v4
         with:
@@ -50,6 +57,11 @@ jobs:
           token: ${{ steps.configure-git.outputs.token }}
           path: recipes-repo
           ref: v1
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java_version }}
+          distribution: temurin
       - name: Determine Recipe Directory
         id: determine-recipe-dir
         run: |

@@ -113,20 +113,8 @@ jobs:
       AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
       AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
 
-  apply-rewrite:
-    needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
-    uses: TwelveIterations/PortingScripts/.github/workflows/apply-rewrite.yml@v1
-    with:
-      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
-      environment: ${{ inputs.environment }}
-      recipes_repository: ${{ inputs.recipes_repository }}
-      recipes_directory: ${{ inputs.recipes_directory || format('migrations/{0}/recipes', inputs.minecraft_version) }}
-    secrets:
-      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
-      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
-
   update-version-catalog:
-    needs: [ensure-version-branch, ensure-migration-branch, apply-patches, apply-rewrite]
+    needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
@@ -184,6 +172,19 @@ jobs:
             git commit -m "Update Gradle properties"
             git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
           fi
+
+  apply-rewrite:
+    needs: [ensure-version-branch, ensure-migration-branch, update-version-catalog, update-gradle-properties]
+    uses: TwelveIterations/PortingScripts/.github/workflows/apply-rewrite.yml@v1
+    with:
+      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      environment: ${{ inputs.environment }}
+      recipes_repository: ${{ inputs.recipes_repository }}
+      recipes_directory: ${{ inputs.recipes_directory || format('migrations/{0}/recipes', inputs.minecraft_version) }}
+      java_version: ${{ needs.update-version-catalog.outputs.java_version }}
+    secrets:
+      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
+      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
 
   create-pull-request:
     needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties, apply-patches]
