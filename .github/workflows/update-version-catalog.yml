@@ -39,43 +39,43 @@ on:
         description: 'Minecraft Version'
         value: ${{ jobs.update-version-catalog.outputs.minecraft_version }}
       minecraft_updated:
-        description: 'Whether Minecraft version was updated'
+        description: 'Whether the Minecraft version was updated'
         value: ${{ jobs.update-version-catalog.outputs.minecraft_updated }}
       fabric_api_updated:
-        description: 'Whether Fabric API version was updated'
+        description: 'Whether the Fabric API version was updated'
         value: ${{ jobs.update-version-catalog.outputs.fabric_api_updated }}
       fabric_api_present:
-        description: 'Whether Fabric API version is present'
+        description: 'Whether a Fabric API version is present'
         value: ${{ jobs.update-version-catalog.outputs.fabric_api_present }}
       fabric_loader_updated:
-        description: 'Whether Fabric Loader version was updated'
+        description: 'Whether the Fabric Loader version was updated'
         value: ${{ jobs.update-version-catalog.outputs.fabric_loader_updated }}
       fabric_loader_present:
-        description: 'Whether Fabric Loader version is present'
+        description: 'Whether a Fabric Loader version is present'
         value: ${{ jobs.update-version-catalog.outputs.fabric_loader_present }}
       neoform_updated:
-        description: 'Whether NeoForm version was updated'
+        description: 'Whether the NeoForm version was updated'
         value: ${{ jobs.update-version-catalog.outputs.neoform_updated }}
       neoform_present:
-        description: 'Whether NeoForm version is present'
+        description: 'Whether a NeoForm version is present'
         value: ${{ jobs.update-version-catalog.outputs.neoform_present }}
       neoforge_updated:
-        description: 'Whether NeoForge version was updated'
+        description: 'Whether the NeoForge version was updated'
         value: ${{ jobs.update-version-catalog.outputs.neoforge_updated }}
       neoforge_present:
-        description: 'Whether NeoForge version is present'
+        description: 'Whether a NeoForge version is present'
         value: ${{ jobs.update-version-catalog.outputs.neoforge_present }}
       forge_updated:
-        description: 'Whether Forge version was updated'
+        description: 'Whether the Forge version was updated'
         value: ${{ jobs.update-version-catalog.outputs.forge_updated }}
       forge_present:
-        description: 'Whether Forge version is present'
+        description: 'Whether a Forge version is present'
         value: ${{ jobs.update-version-catalog.outputs.forge_present }}
       balm_updated:
-        description: 'Whether Balm version was updated'
+        description: 'Whether the Balm version was updated'
         value: ${{ jobs.update-version-catalog.outputs.balm_updated }}
       balm_present:
-        description: 'Whether Balm version is present'
+        description: 'Whether a Balm version is present'
         value: ${{ jobs.update-version-catalog.outputs.balm_present }}
       fabric_api_version:
         description: 'Fabric API Version'
@@ -104,32 +104,37 @@ on:
       mdg_version:
         description: 'MDG Version'
         value: ${{ jobs.update-version-catalog.outputs.mdg_version }}
+      loom_present:
+        description: 'Whether a Loom version is present'
+        value: ${{ jobs.update-version-catalog.outputs.loom_present }}
+      loom_updated:
+        description: 'Whether the Loom version was updated'
+        value: ${{ jobs.update-version-catalog.outputs.loom_updated }}
       mdg_updated:
         description: 'Whether the ModDevGradle version was updated'
         value: ${{ jobs.update-version-catalog.outputs.mdg_updated }}
       mdg_present:
         description: 'Whether a ModDevGradle version is present'
         value: ${{ jobs.update-version-catalog.outputs.mdg_present }}
-
 jobs:
   update-version-catalog:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     outputs:
       updated: ${{ steps.update-catalog.outputs.updated }}
-      minecraft_updated: ${{ steps.update-catalog.outputs.minecraft_updated }}
-      fabric_api_updated: ${{ steps.update-catalog.outputs.fabric_api_updated }}
-      fabric_api_present: ${{ steps.update-catalog.outputs.fabric_api_present }}
-      fabric_loader_updated: ${{ steps.update-catalog.outputs.fabric_loader_updated }}
-      fabric_loader_present: ${{ steps.update-catalog.outputs.fabric_loader_present }}
-      neoform_updated: ${{ steps.update-catalog.outputs.neoform_updated }}
-      neoform_present: ${{ steps.update-catalog.outputs.neoform_present }}
-      neoforge_updated: ${{ steps.update-catalog.outputs.neoforge_updated }}
-      neoforge_present: ${{ steps.update-catalog.outputs.neoforge_present }}
-      forge_updated: ${{ steps.update-catalog.outputs.forge_updated }}
-      forge_present: ${{ steps.update-catalog.outputs.forge_present }}
-      balm_updated: ${{ steps.update-catalog.outputs.balm_updated }}
-      balm_present: ${{ steps.update-catalog.outputs.balm_present }}
+      minecraft_updated: ${{ steps.update-minecraft.outputs.updated }}
+      fabric_api_updated: ${{ steps.update-fabric-api.outputs.updated }}
+      fabric_api_present: ${{ steps.fabric-api.outputs.version != '' }}
+      fabric_loader_updated: ${{ steps.update-fabric-loader.outputs.updated }}
+      fabric_loader_present: ${{ steps.fabric-loader.outputs.version != '' }}
+      neoform_updated: ${{ steps.update-neoform.outputs.updated }}
+      neoform_present: ${{ steps.neoform.outputs.version != '' }}
+      neoforge_updated: ${{ steps.update-neoforge.outputs.updated }}
+      neoforge_present: ${{ steps.neoforge.outputs.version != '' }}
+      forge_updated: ${{ steps.update-forge.outputs.updated }}
+      forge_present: ${{ steps.forge.outputs.version != '' }}
+      balm_updated: ${{ steps.update-balm.outputs.updated }}
+      balm_present: ${{ steps.balm.outputs.version != '' }}
       minecraft_version: ${{ steps.minecraft.outputs.version }}
       fabric_api_version: ${{ steps.fabric-api.outputs.version }}
       fabric_loader_version: ${{ steps.fabric-loader.outputs.version }}
@@ -140,8 +145,10 @@ jobs:
       mdg_present: ${{ steps.mdg.outputs.version != '' }}
       forge_version: ${{ steps.forge.outputs.version }}
       balm_version: ${{ steps.balm.outputs.version }}
-      java_version: 25
-      loom_version: 1.14-SNAPSHOT
+      java_version: ${{ steps.java.outputs.version }}
+      loom_version: ${{ steps.loom.outputs.version }}
+      loom_present: ${{ steps.loom.outputs.version != '' }}
+      loom_updated: ${{ steps.update-loom.outputs.updated }}
     steps:
       - uses: actions/create-github-app-token@v2
         id: app-token
@@ -173,6 +180,11 @@ jobs:
         continue-on-error: true
         with:
           version: "${{ inputs.minecraft_version }}"
+      - name: Get Java Version
+        id: java
+        run: |
+          echo "version=25" >> $GITHUB_OUTPUT
+        continue-on-error: true
       - name: Get Fabric API Version
         id: fabric-api
         uses: TwelveIterations/get-fabric-api-version@v1
@@ -203,6 +215,12 @@ jobs:
         with:
           artifact: moddev-gradle
           version: "2.*"
+      - name: Get Loom Version
+        id: loom
+        if: inputs.update_plugins == 'true'
+        run: |
+          echo "version=1.14-SNAPSHOT" >> $GITHUB_OUTPUT
+        continue-on-error: true
       - name: Get Forge Version
         id: forge
         uses: TwelveIterations/get-forge-version@v1
@@ -220,135 +238,77 @@ jobs:
           groupId: 'net.blay09.mods'
           artifactId: 'balm-common'
           version: '${{ steps.normalize-minecraft-version.outputs.version }}.*'
-      - name: Update MDG
+      - name: Update Minecraft
+        id: update-minecraft
+        if: steps.minecraft.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: com.mojang:minecraft
+          version: ${{ steps.minecraft.outputs.version }}
+      - name: Update ModDevGradle
         id: update-mdg
         if: steps.mdg.outputs.version != '' && inputs.update_plugins == 'true'
         uses: TwelveIterations/update-gradle-version-catalog@v1
         with:
-          library: net.neoforged.moddev
+          plugin: net.neoforged.moddev
           version: ${{ steps.mdg.outputs.version }}
+      - name: Update Loom
+        id: update-loom
+        if: steps.loom.outputs.version != '' && inputs.update_plugins == 'true'
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          plugin: fabric-loom
+          version: ${{ steps.loom.outputs.version }}
+      - name: Update Fabric API
+        id: update-fabric-api
+        if: steps.fabric-api.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.fabricmc.fabric-api:fabric-api
+          version: ${{ steps.fabric-api.outputs.version }}
+      - name: Update Fabric Loader
+        id: update-fabric-loader
+        if: steps.fabric-loader.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.fabricmc:fabric-loader
+          version: ${{ steps.fabric-loader.outputs.version }}
+      - name: Update NeoForm
+        id: update-neoform
+        if: steps.neoform.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.neoforged:neoform
+          version: ${{ steps.neoform.outputs.version }}
+      - name: Update NeoForge
+        id: update-neoforge
+        if: steps.neoforge.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.neoforged:neoforge
+          version: ${{ steps.neoforge.outputs.version }}
+      - name: Update Forge
+        id: update-forge
+        if: steps.forge.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.minecraftforge:forge
+          version: ${{ steps.forge.outputs.version }}
+      - name: Update Balm
+        id: update-balm
+        if: steps.balm.outputs.version != ''
+        uses: TwelveIterations/update-gradle-version-catalog@v1
+        with:
+          library: net.blay09.mods:balm-common
+          version: ${{ steps.balm.outputs.version }}
       - name: Update version catalog
         run: |
-          # Initialize update flags
-          minecraft_updated=false
-          fabric_api_updated=false
-          fabric_api_present=false
-          fabric_loader_updated=false
-          fabric_loader_present=false
-          neoform_updated=false
-          neoform_present=false
-          neoforge_updated=false
-          neoforge_present=false
-          forge_updated=false
-          forge_present=false
-          balm_updated=false
-          balm_present=false
-          
-          # Update Minecraft Version
-          # TODO This should use get-minecraft-version to get the proper latest version for the branch
-          if grep -q "^\s*minecraft\s*=" gradle/libs.versions.toml; then
-            current_minecraft=$(grep "^\s*minecraft\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-            if [ "$current_minecraft" != "${{ steps.minecraft.outputs.version }}" ]; then
-              sed -i 's|^\s*minecraft\s*=\s*".*"|minecraft = "${{ steps.minecraft.outputs.version }}"|' gradle/libs.versions.toml
-              minecraft_updated=true
-            fi
-          fi
-          
-          # Update Fabric API
-          if [ -n "${{ steps.fabric-api.outputs.version }}" ]; then
-            fabric_api_present=true
-            if grep -q "^\s*fabricApi\s*=" gradle/libs.versions.toml; then
-              current_fabric_api=$(grep "^\s*fabricApi\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-              if [ "$current_fabric_api" != "${{ steps.fabric-api.outputs.version }}" ]; then
-                sed -i 's|^\s*fabricApi\s*=\s*".*"|fabricApi = "${{ steps.fabric-api.outputs.version }}"|' gradle/libs.versions.toml
-                fabric_api_updated=true
-              fi
-            fi
-          fi
-          
-          # Update Fabric Loader
-          if [ -n "${{ steps.fabric-loader.outputs.version }}" ]; then
-            fabric_loader_present=true
-            if grep -q "^\s*fabricLoader\s*=" gradle/libs.versions.toml; then
-              current_fabric_loader=$(grep "^\s*fabricLoader\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-              if [ "$current_fabric_loader" != "${{ steps.fabric-loader.outputs.version }}" ]; then
-                sed -i 's|^\s*fabricLoader\s*=\s*".*"|fabricLoader = "${{ steps.fabric-loader.outputs.version }}"|' gradle/libs.versions.toml
-                fabric_loader_updated=true
-              fi
-            fi
-          fi
-          
-          # Update NeoForm
-          if [ -n "${{ steps.neoform.outputs.version }}" ]; then
-            neoform_present=true
-            if grep -q "^\s*neoForm\s*=" gradle/libs.versions.toml; then
-              current_neoform=$(grep "^\s*neoForm\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-              if [ "$current_neoform" != "${{ steps.neoform.outputs.version }}" ]; then
-                sed -i 's|^\s*neoForm\s*=\s*".*"|neoForm = "${{ steps.neoform.outputs.version }}"|' gradle/libs.versions.toml
-                neoform_updated=true
-              fi
-            fi
-          fi
-          
-          # Update NeoForge
-          if [ -n "${{ steps.neoforge.outputs.version }}" ]; then
-            neoforge_present=true
-            if grep -q "^\s*neoForge\s*=" gradle/libs.versions.toml; then
-              current_neoforge=$(grep "^\s*neoForge\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-              if [ "$current_neoforge" != "${{ steps.neoforge.outputs.version }}" ]; then
-                sed -i 's|^\s*neoForge\s*=\s*".*"|neoForge = "${{ steps.neoforge.outputs.version }}"|' gradle/libs.versions.toml
-                neoforge_updated=true
-              fi
-            fi
-          fi
-          
-          # Update Forge
-          if [ -n "${{ steps.forge.outputs.version }}" ]; then
-            forge_present=true
-            if grep -q "^\s*forge\s*=" gradle/libs.versions.toml; then
-              current_forge=$(grep "^\s*forge\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-              if [ "$current_forge" != "${{ steps.forge.outputs.version }}" ]; then
-                sed -i 's|^\s*forge\s*=\s*".*"|forge = "${{ steps.forge.outputs.version }}"|' gradle/libs.versions.toml
-                forge_updated=true
-              fi
-            fi
-          fi
-          
-          # Update Balm
-          if [ -n "${{ steps.balm.outputs.version }}" ]; then
-            balm_present=true
-            if grep -q "^\s*balm\s*=" gradle/libs.versions.toml; then
-              current_balm=$(grep "^\s*balm\s*=" gradle/libs.versions.toml | sed 's/.*"\(.*\)".*/\1/')
-              if [ "$current_balm" != "${{ steps.balm.outputs.version }}" ]; then
-                sed -i 's|^\s*balm\s*=\s*".*"|balm = "${{ steps.balm.outputs.version }}"|' gradle/libs.versions.toml
-                balm_updated=true
-              fi
-            fi
-          fi
-
-          # TODO Update Loom, ModDevGradle, but it should be optional (e.g. "update_plugins" input)
-
           # Check if there are changes
           if git diff --quiet gradle/libs.versions.toml; then
             echo "updated=false" >> "$GITHUB_OUTPUT"
           else
             echo "updated=true" >> "$GITHUB_OUTPUT"
           fi
-          
-          # Output individual update flags
-          echo "minecraft_updated=${minecraft_updated}" >> "$GITHUB_OUTPUT"
-          echo "fabric_api_updated=${fabric_api_updated}" >> "$GITHUB_OUTPUT"
-          echo "fabric_api_present=${fabric_api_present}" >> "$GITHUB_OUTPUT"
-          echo "fabric_loader_updated=${fabric_loader_updated}" >> "$GITHUB_OUTPUT"
-          echo "fabric_loader_present=${fabric_loader_present}" >> "$GITHUB_OUTPUT"
-          echo "neoform_updated=${neoform_updated}" >> "$GITHUB_OUTPUT"
-          echo "neoform_present=${neoform_present}" >> "$GITHUB_OUTPUT"
-          echo "neoforge_updated=${neoforge_updated}" >> "$GITHUB_OUTPUT"
-          echo "neoforge_present=${neoforge_present}" >> "$GITHUB_OUTPUT"
-          echo "forge_updated=${forge_updated}" >> "$GITHUB_OUTPUT"
-          echo "forge_present=${forge_present}" >> "$GITHUB_OUTPUT"
-          echo "balm_updated=${balm_updated}" >> "$GITHUB_OUTPUT"
-          echo "balm_present=${balm_present}" >> "$GITHUB_OUTPUT"
         id: update-catalog
       - name: Create Pull Request
         if: steps.update-catalog.outputs.updated == 'true' && inputs.commit_directly == false
