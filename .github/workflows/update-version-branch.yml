@@ -12,6 +12,10 @@ on:
         required: false
         type: string
         default: Automations
+      patches_directory:
+        description: 'Directory containing git patches (relative to repository root)'
+        required: false
+        type: string
     secrets:
       AUTOMATIONS_APP_ID:
         required: true
@@ -83,6 +87,95 @@ jobs:
     outputs:
       migration_branch: ${{ steps.check-migration-branch.outputs.migration_branch }}
 
+
+  apply-patches:
+    needs: [ensure-version-branch, ensure-migration-branch]
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Authenticate GitHub App
+        id: configure-git
+        uses: TwelveIterations/PortingScripts/.github/actions/configure-git@v1
+        with:
+          app-id: ${{ secrets.AUTOMATIONS_APP_ID }}
+          private-key: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.configure-git.outputs.token }}
+          ref: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      - name: Apply git patches
+        id: apply-patches
+        run: |
+          PATCHES_DIR="${{ inputs.patches_directory }}"
+          if [ -z "$PATCHES_DIR" ]; then
+            PATCHES_DIR="migrations/${{ needs.ensure-version-branch.outputs.version_branch }}/patches"
+          fi
+          SUCCEEDED_PATCHES=""
+          FAILED_PATCHES=""
+          
+          echo "Looking for patches in: $PATCHES_DIR"
+          
+          if [ ! -d "$PATCHES_DIR" ]; then
+            echo "No patches directory found at $PATCHES_DIR"
+            echo "succeeded_patches=" >> "$GITHUB_OUTPUT"
+            echo "failed_patches=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Find all patch files
+          PATCH_FILES=$(find "$PATCHES_DIR" -name "*.patch" -type f | sort)
+          
+          if [ -z "$PATCH_FILES" ]; then
+            echo "No patch files found in $PATCHES_DIR"
+            echo "succeeded_patches=" >> "$GITHUB_OUTPUT"
+            echo "failed_patches=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "Found patch files:"
+          echo "$PATCH_FILES"
+          
+          # Apply each patch
+          for patch_file in $PATCH_FILES; do
+            patch_name=$(basename "$patch_file")
+            echo "Applying patch: $patch_name"
+            
+            if git apply --check "$patch_file" 2>/dev/null; then
+              if git apply "$patch_file"; then
+                echo "✓ Successfully applied: $patch_name"
+                SUCCEEDED_PATCHES="$SUCCEEDED_PATCHES$patch_name\n"
+              else
+                echo "✗ Failed to apply: $patch_name"
+                FAILED_PATCHES="$FAILED_PATCHES$patch_name\n"
+              fi
+            else
+              echo "✗ Patch does not apply cleanly: $patch_name"
+              FAILED_PATCHES="$FAILED_PATCHES$patch_name\n"
+            fi
+          done
+          
+          # Commit any successfully applied patches
+          if [ -n "$SUCCEEDED_PATCHES" ]; then
+            git add .
+            if ! git diff --cached --quiet; then
+              git commit -m "Apply migration patches"
+              git push --force origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
+            fi
+          fi
+          
+          # Output results for PR description
+          echo "succeeded_patches<<EOF" >> "$GITHUB_OUTPUT"
+          echo -e "$SUCCEEDED_PATCHES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          
+          echo "failed_patches<<EOF" >> "$GITHUB_OUTPUT"
+          echo -e "$FAILED_PATCHES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+    outputs:
+      succeeded_patches: ${{ steps.apply-patches.outputs.succeeded_patches }}
+      failed_patches: ${{ steps.apply-patches.outputs.failed_patches }}
+
   update-version-catalog:
     needs: [ensure-version-branch, ensure-migration-branch]
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
@@ -144,7 +237,7 @@ jobs:
           fi
 
   create-pull-request:
-    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties]
+    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties, apply-patches]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -164,6 +257,30 @@ jobs:
           
           # Check if PR already exists
           if gh pr list --base "$VERSION_BRANCH" --head "$MIGRATION_BRANCH" --json number | jq length | grep -q 0; then
+            # Build patch results section
+            PATCH_RESULTS=""
+            SUCCEEDED_PATCHES="${{ needs.apply-patches.outputs.succeeded_patches }}"
+            FAILED_PATCHES="${{ needs.apply-patches.outputs.failed_patches }}"
+            
+            if [ -n "$SUCCEEDED_PATCHES" ] || [ -n "$FAILED_PATCHES" ]; then
+              PATCH_RESULTS="## Migration Patches
+              
+            "
+              if [ -n "$SUCCEEDED_PATCHES" ]; then
+                PATCH_RESULTS="$PATCH_RESULTS**Successfully Applied Patches:**
+            $SUCCEEDED_PATCHES
+            
+            "
+              fi
+              
+              if [ -n "$FAILED_PATCHES" ]; then
+                PATCH_RESULTS="$PATCH_RESULTS**Failed Patches:**
+            $FAILED_PATCHES
+            
+            "
+              fi
+            fi
+            
             # Create pull request using GitHub CLI
             gh pr create \
               --title "Update Branch for Minecraft $VERSION_BRANCH" \
@@ -174,6 +291,7 @@ jobs:
           - **Version Catalog Updates**: Updated dependency versions
           - **Gradle Properties**: Updated project version and Java version
           
+          $PATCH_RESULTS
           Please review all changes carefully before merging.
           
           ---
