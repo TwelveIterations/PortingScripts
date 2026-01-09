@@ -1,0 +1,18 @@
+Subject: [PATCH] Update Gradle wrapper version
+---
+Index: gradle/wrapper/gradle-wrapper.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>ISO-8859-1
+===================================================================
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+--- a/gradle/wrapper/gradle-wrapper.properties	(revision ece17fdf9ee4a8bf3cadcec38e56b9cfd1f9013a)
++++ b/gradle/wrapper/gradle-wrapper.properties	(date 1767978066680)
+@@ -1,6 +1,6 @@
+ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-bin.zip
++distributionUrl=https\://services.gradle.org/distributions/gradle-9.3.0-rc-1-bin.zip
+ networkTimeout=10000
+ validateDistributionUrl=true
+ zipStoreBase=GRADLE_USER_HOME
