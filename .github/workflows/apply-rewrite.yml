@@ -61,8 +61,9 @@ jobs:
       - name: Convert IntelliJ Migration Maps to OpenRewrite
         uses: TwelveIterations/intellij-to-openrewrite@v1
         with:
-          input_directory: ${{ steps.determine-recipe-dir.outputs.recipes_directory }}
-          output_directory: ${{ steps.determine-recipe-dir.outputs.recipes_directory }}
+          input_directory: recipes-repo/${{ steps.determine-recipe-dir.outputs.recipes_directory }}
+          output_directory: recipes-repo/${{ steps.determine-recipe-dir.outputs.recipes_directory }}
+        continue-on-error: true
       - name: Apply recipes
         id: apply-recipes
         run: |
