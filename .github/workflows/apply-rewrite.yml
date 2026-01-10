@@ -57,6 +57,10 @@ jobs:
         with:
           java-version: ${{ inputs.java_version }}
           distribution: temurin
+      - name: Run pre hooks
+        uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
+        with:
+          hooks-directory: hooks/apply-rewrite/pre
       - name: Apply recipes
         id: apply-recipes
         run: |
@@ -152,5 +156,9 @@ jobs:
           fi
 
           echo "recipes=$ACTIVE_RECIPES" >> "$GITHUB_OUTPUT"
+      - name: Run post hooks
+        uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
+        with:
+          hooks-directory: hooks/apply-rewrite/post
     outputs:
       recipes: ${{ steps.apply-recipes.outputs.recipes }}
