@@ -12,13 +12,8 @@ on:
         required: false
         type: string
         default: Automations
-      recipes_repository:
-        description: 'Repository containing recipes (format: owner/repo)'
-        required: false
-        type: string
-        default: TwelveIterations/PortingScripts
-      recipes_directory:
-        description: 'Directory containing recipes (relative to recipes_repository root)'
+      migrations:
+        description: 'Migration repository with optional ref (format: org/repo@ref)'
         required: false
         type: string
       java_version:
@@ -51,37 +46,28 @@ jobs:
       - name: Validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v5
       - name: Checkout repository for recipes
-        uses: actions/checkout@v4
+        id: checkout-recipes
+        uses: TwelveIterations/PortingScripts/.github/actions/checkout-migrations@v1
+        if: inputs.migrations != ''
         with:
-          repository: ${{ inputs.recipes_repository }}
-          token: ${{ steps.configure-git.outputs.token }}
+          migrations: ${{ inputs.migrations }}
           path: recipes-repo
-          ref: v1
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: ${{ inputs.java_version }}
           distribution: temurin
-      - name: Determine Recipe Directory
-        id: determine-recipe-dir
-        run: |
-          if [ -n "${{ inputs.recipes_directory }}" ]; then
-            echo "recipes_directory=${{ inputs.recipes_directory }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "recipes_directory=migrations/${{ inputs.minecraft_version }}/recipes" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Convert IntelliJ Migration Maps to OpenRewrite
-        uses: TwelveIterations/intellij-to-openrewrite@v1
-        with:
-          input_directory: recipes-repo/${{ steps.determine-recipe-dir.outputs.recipes_directory }}
-          output_directory: recipes-repo/${{ steps.determine-recipe-dir.outputs.recipes_directory }}
-        continue-on-error: true
       - name: Apply recipes
         id: apply-recipes
         run: |
-          RECIPES_DIR="recipes-repo/${{ steps.determine-recipe-dir.outputs.recipes_directory }}"
-          if [ ! -d "$RECIPES_DIR" ]; then
-            echo "No recipes directory found at $RECIPES_DIR"
+          if [ "${{ inputs.migrations }}" != "" ]; then
+            RECIPES_DIR="${{ steps.checkout-recipes.outputs.path }}/recipes"
+          else
+            RECIPES_DIR="recipes"
+          fi
+          
+          if [ -z "$RECIPES_DIR" ] || [ ! -d "$RECIPES_DIR" ]; then
+            echo "No recipes directory found"
             echo "recipes=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -125,39 +111,38 @@ jobs:
           
           echo "Active recipes: $ACTIVE_RECIPES"
           
-          # Create rewrite.gradle init script. Kinda ugly but there's no standalone CLI for OpenRewrite.
-          echo "initscript {" > recipes-repo/rewrite.gradle
-          echo "    repositories {" >> recipes-repo/rewrite.gradle
-          echo "        gradlePluginPortal()" >> recipes-repo/rewrite.gradle
-          echo "    }" >> recipes-repo/rewrite.gradle
-          echo "    dependencies {" >> recipes-repo/rewrite.gradle
-          echo "        classpath('org.openrewrite:plugin:latest.release')" >> recipes-repo/rewrite.gradle
-          echo "    }" >> recipes-repo/rewrite.gradle
-          echo "}" >> recipes-repo/rewrite.gradle
-          echo "" >> recipes-repo/rewrite.gradle
-          echo "rootProject {" >> recipes-repo/rewrite.gradle
-          echo "    plugins.apply(org.openrewrite.gradle.RewritePlugin)" >> recipes-repo/rewrite.gradle
-          echo "    dependencies {" >> recipes-repo/rewrite.gradle
-          echo "        rewrite('org.openrewrite.recipe:rewrite-gradle:latest.release')" >> recipes-repo/rewrite.gradle
-          echo "    }" >> recipes-repo/rewrite.gradle
-          echo "" >> recipes-repo/rewrite.gradle
-          echo "    afterEvaluate {" >> recipes-repo/rewrite.gradle
-          echo "        if (repositories.isEmpty()) {" >> recipes-repo/rewrite.gradle
-          echo "            repositories {" >> recipes-repo/rewrite.gradle
-          echo "                mavenCentral()" >> recipes-repo/rewrite.gradle
-          echo "            }" >> recipes-repo/rewrite.gradle
-          echo "        }" >> recipes-repo/rewrite.gradle
-          echo "    }" >> recipes-repo/rewrite.gradle
-          echo "}" >> recipes-repo/rewrite.gradle
+          # Create rewrite.gradle in the recipes directory
+          GRADLE_REWRITE_INIT_SCRIPT="${{ steps.checkout-recipes.outputs.path }}/rewrite.gradle"
+          echo "initscript {" > "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    repositories {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "        gradlePluginPortal()" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    dependencies {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "        classpath('org.openrewrite:plugin:latest.release')" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "}" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "rootProject {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    plugins.apply(org.openrewrite.gradle.RewritePlugin)" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    dependencies {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "        rewrite('org.openrewrite.recipe:rewrite-gradle:latest.release')" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "    afterEvaluate {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "        if (repositories.isEmpty()) {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "            repositories {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "                mavenCentral()" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "            }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "        }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
 
-          cat recipes-repo/rewrite.gradle
-          
           # Run Gradle rewrite task if we have recipes
           if [ -n "$ACTIVE_RECIPES" ]; then
-            ./gradlew rewriteRun --init-script=recipes-repo/rewrite.gradle -Drewrite.activeRecipe="$ACTIVE_RECIPES"
-            # Commit any changes made by rewrite (excluding recipes-repo)
+            ./gradlew rewriteRun --init-script="$GRADLE_REWRITE_INIT_SCRIPT" -Drewrite.activeRecipe="$ACTIVE_RECIPES"
+            # Commit any changes made by rewrite (excluding recipes checkout directory)
             git add .
-            git reset HEAD recipes-repo 2>/dev/null || true
+            if [ "${{ inputs.migrations }}" != "" ]; then
+              git reset HEAD "${{ steps.checkout-recipes.outputs.path }}" 2>/dev/null || true
+            fi
             if ! git diff --cached --quiet; then
               git commit -m "Apply automated code migrations"
               git push origin "${{ inputs.branch }}"

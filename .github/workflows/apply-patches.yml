@@ -12,13 +12,8 @@ on:
         required: false
         type: string
         default: Automations
-      patches_repository:
-        description: 'Repository containing patches (format: owner/repo)'
-        required: false
-        type: string
-        default: TwelveIterations/PortingScripts
-      patches_directory:
-        description: 'Directory containing git patches (relative to patches_repository root)'
+      migrations:
+        description: 'Migration repository with optional ref and path (format: org/repo@ref)'
         required: false
         type: string
     secrets:
@@ -44,18 +39,23 @@ jobs:
           token: ${{ steps.configure-git.outputs.token }}
           ref: ${{ inputs.branch }}
       - name: Checkout repository for patches
-        uses: actions/checkout@v4
+        id: checkout-patches
+        uses: TwelveIterations/PortingScripts/.github/actions/checkout-migrations@v1
+        if: inputs.migrations != ''
         with:
-          repository: ${{ inputs.patches_repository }}
-          token: ${{ steps.configure-git.outputs.token }}
+          migrations: ${{ inputs.migrations }}
           path: patches-repo
-          ref: v1
       - name: Apply git patches
         id: apply-patches
         run: |
-          PATCHES_DIR="patches-repo/${{ inputs.patches_directory }}"
-          if [ ! -d "$PATCHES_DIR" ]; then
-            echo "No patches directory found at $PATCHES_DIR"
+          if [ "${{ inputs.migrations }}" != "" ]; then
+            PATCHES_DIR="${{ steps.checkout-patches.outputs.path }}/patches"
+          else
+            PATCHES_DIR="patches"
+          fi
+          
+          if [ -z "$PATCHES_DIR" ] || [ ! -d "$PATCHES_DIR" ]; then
+            echo "No patches directory found"
             echo "succeeded_patches=" >> "$GITHUB_OUTPUT"
             echo "failed_patches=" >> "$GITHUB_OUTPUT"
             exit 0
@@ -100,9 +100,11 @@ jobs:
           
           # Commit any successfully applied patches
           if [ -n "$SUCCEEDED_PATCHES" ]; then
-            # Add all changes but exclude the patches-repo directory
+            # Add all changes but exclude the patches checkout directory
             git add .
-            git reset HEAD patches-repo 2>/dev/null || true
+            if [ "${{ inputs.migrations }}" != "" ]; then
+              git reset HEAD "${{ steps.checkout-patches.outputs.path }}" 2>/dev/null || true
+            fi
             if ! git diff --cached --quiet; then
               git commit -m "Apply migration patches"
               git push origin "${{ inputs.branch }}"

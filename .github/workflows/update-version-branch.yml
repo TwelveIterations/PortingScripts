@@ -12,22 +12,8 @@ on:
         required: false
         type: string
         default: Automations
-      patches_repository:
-        description: 'Repository containing patches (format: owner/repo)'
-        required: false
-        type: string
-        default: TwelveIterations/PortingScripts
-      patches_directory:
-        description: 'Directory containing git patches (relative to patches_repository root)'
-        required: false
-        type: string
-      recipes_repository:
-        description: 'Repository containing recipes (format: owner/repo)'
-        required: false
-        type: string
-        default: TwelveIterations/PortingScripts
-      recipes_directory:
-        description: 'Directory containing recipes (relative to recipes_repository root)'
+      migrations:
+        description: 'Migration repository with optional ref and path (format: org/repo@ref/path)'
         required: false
         type: string
     secrets:
@@ -96,10 +82,6 @@ jobs:
         id: create-migration-branch
         if: steps.check-migration-branch.outputs.migration_branch_missing == 'true'
         run: git checkout -b "${{ steps.check-migration-branch.outputs.migration_branch }}"
-      - name: Run pre migration hooks
-        uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
-        with:
-          hooks-directory: ${{ format('migrations/{0}/hooks/pre', inputs.minecraft_version) }}
       - name: Push migration branch
         run: git push origin "${{ steps.check-migration-branch.outputs.migration_branch }}"
     outputs:
@@ -111,8 +93,7 @@ jobs:
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       environment: ${{ inputs.environment }}
-      patches_repository: ${{ inputs.patches_repository }}
-      patches_directory: ${{ inputs.patches_directory || format('migrations/{0}/patches', inputs.minecraft_version) }}
+      migrations: ${{ inputs.migrations }}
     secrets:
       AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
       AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
@@ -183,8 +164,7 @@ jobs:
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       environment: ${{ inputs.environment }}
-      recipes_repository: ${{ inputs.recipes_repository }}
-      recipes_directory: ${{ inputs.recipes_directory || format('migrations/{0}/recipes', inputs.minecraft_version) }}
+      migrations: ${{ inputs.migrations }}
       java_version: ${{ needs.update-version-catalog.outputs.java_version }}
     secrets:
       AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
