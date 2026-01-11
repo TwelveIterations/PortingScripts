@@ -148,7 +148,7 @@ jobs:
             ./gradlew rewriteRun --init-script="$GRADLE_REWRITE_INIT_SCRIPT" -Drewrite.activeRecipe="$ACTIVE_RECIPES"
             # Commit any changes made by rewrite (excluding recipes checkout directory)
             git add .
-            git rm --cached "${{ steps.checkout-recipes.outputs.checkout_path }}" 2>/dev/null || true
+            git reset HEAD "${{ steps.checkout-recipes.outputs.checkout_path }}" 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply automated code migrations"
               git push origin "${{ inputs.branch }}"

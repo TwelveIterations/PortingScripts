@@ -97,7 +97,7 @@ jobs:
           if [ -n "$SUCCEEDED_PATCHES" ]; then
             # Add all changes but exclude the patches checkout directory
             git add .
-            git rm --cached "${{ steps.checkout-patches.outputs.checkout_path }}" 2>/dev/null || true
+            git reset HEAD "${{ steps.checkout-patches.outputs.checkout_path }}" 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply migration patches"
               git push origin "${{ inputs.branch }}"
