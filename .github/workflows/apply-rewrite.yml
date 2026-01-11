@@ -173,12 +173,12 @@ jobs:
           fi
 
           echo "recipes=$ACTIVE_RECIPES" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
       - name: Run post hooks
         uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
         with:
           hooks-directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/hooks/apply-rewrite/post
         env:
           HOOKS_BRANCH: ${{ inputs.branch }}
-        continue-on-error: true
     outputs:
       recipes: ${{ steps.apply-recipes.outputs.recipes }}
