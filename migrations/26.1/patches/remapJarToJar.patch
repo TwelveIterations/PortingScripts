@@ -1,0 +1,28 @@
+Subject: [PATCH] Change remapJar to jar
+---
+Index: fabric/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/fabric/build.gradle b/fabric/build.gradle
+--- a/fabric/build.gradle	(revision 0247bb733fa1ba199e41dbf81c682c8a2e144075)
++++ b/fabric/build.gradle	(date 1768135831950)
+@@ -71,7 +71,7 @@
+         projectId != null
+     }
+     if (projectId) {
+-        def mainFile = upload(findProperty("curseforge_project_id"), remapJar.archiveFile.get().asFile)
++        def mainFile = upload(findProperty("curseforge_project_id"), jar.archiveFile.get().asFile)
+         mainFile.changelog = rootProject.file('CHANGELOG.md').text
+         mainFile.addRequirement("fabric-api")
+         mainFile.addRequirement("balm")
+@@ -86,7 +86,7 @@
+     projectId = findProperty("modrinth_project_id")
+     versionType = "release"
+     versionNumber = project.version + "+fabric-" + libs.minecraft.get().version
+-    uploadFile = remapJar
++    uploadFile = jar
+     changelog = rootProject.file("CHANGELOG.md").text
+     gameVersions = [libs.minecraft.get().version]
+     syncBodyFrom = rootProject.file("modpage.md").text
