@@ -44,6 +44,12 @@ jobs:
         with:
           migrations: ${{ inputs.migrations }}
           path: patches-repo
+      - name: Run pre hooks
+        uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
+        with:
+          hooks-directory: ${{ steps.checkout-patches.outputs.migrations_path }}/hooks/apply-patches/pre
+        env:
+          HOOKS_BRANCH: ${{ inputs.branch }}
       - name: Apply git patches
         id: apply-patches
         run: |
@@ -112,6 +118,12 @@ jobs:
           echo "failed_patches<<EOF" >> "$GITHUB_OUTPUT"
           echo -e "$FAILED_PATCHES" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
+      - name: Run post hooks
+        uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
+        with:
+          hooks-directory: ${{ steps.checkout-patches.outputs.migrations_path }}/hooks/apply-patches/post
+        env:
+          HOOKS_BRANCH: ${{ inputs.branch }}
     outputs:
       succeeded_patches: ${{ steps.apply-patches.outputs.succeeded_patches }}
       failed_patches: ${{ steps.apply-patches.outputs.failed_patches }}
