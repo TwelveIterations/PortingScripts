@@ -2,7 +2,7 @@ name: 'Checkout Migrations'
 description: 'Parses migrations input and checks out with optional ref and path'
 inputs:
   migrations:
-    description: 'Migration repository with optional ref and path (format: org/repo@ref/path)'
+    description: 'Migration repository with ref and optional path (format: org/repo@ref/path)'
     required: true
   path:
     description: 'Path to checkout the repository to (relative to current directory). If not provided, uses repository name'
@@ -29,22 +29,14 @@ runs:
       run: |
         MIGRATIONS_INPUT="${{ inputs.migrations }}"
         
-        # Extract path if present (after /)
-        if [[ "$MIGRATIONS_INPUT" == *"/"* ]]; then
-          REPO_PART="${MIGRATIONS_INPUT%%/*}"
-          MIGRATIONS_SUBPATH="${MIGRATIONS_INPUT##*/}"
+        # Parse repository, ref, and optional path
+        if [[ "$MIGRATIONS_INPUT" =~ ^([^/@]+)/([^/@]+)@([^/]+)(/(.+))?$ ]]; then
+          REPO="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+          REF="${BASH_REMATCH[3]}"
+          MIGRATIONS_SUBPATH="${BASH_REMATCH[5]:-migrations}"
         else
-          REPO_PART="$MIGRATIONS_INPUT"
-          MIGRATIONS_SUBPATH="migrations"
-        fi
-        
-        # Extract ref if present (after @)
-        if [[ "$REPO_PART" == *"@"* ]]; then
-          REPO="${REPO_PART%%@*}"
-          REF="${REPO_PART##*@}"
-        else
-          REPO="$REPO_PART"
-          REF="main"
+          echo "Invalid format. Expected: org/repo@ref[/path]"
+          exit 1
         fi
         
         # Determine checkout path
