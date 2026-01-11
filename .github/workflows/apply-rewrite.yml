@@ -126,8 +126,6 @@ jobs:
             fi
           done
           
-          cat ${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml
-
           echo "Active recipes: $ACTIVE_RECIPES"
           
           # Create rewrite.gradle in the recipes directory

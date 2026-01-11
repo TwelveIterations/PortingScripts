@@ -4,7 +4,7 @@ set -euo pipefail
 
 echo "Updating Loom dependency configuration to unobfuscated variants..."
 
-find . -name "*.gradle" | while read -r gradle_file; do
+find . -type f -name "*.gradle" | while read -r gradle_file; do
     sed -i 's/\bmodImplementation\b/implementation/g' "$gradle_file"
     sed -i 's/\bmodApi\b/api/g' "$gradle_file"
     sed -i 's/\bmodRuntimeOnly\b/runtimeOnly/g' "$gradle_file"
