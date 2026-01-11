@@ -179,5 +179,6 @@ jobs:
           hooks-directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/hooks/apply-rewrite/post
         env:
           HOOKS_BRANCH: ${{ inputs.branch }}
+        continue-on-error: true
     outputs:
       recipes: ${{ steps.apply-recipes.outputs.recipes }}
