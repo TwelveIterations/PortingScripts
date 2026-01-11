@@ -15,8 +15,10 @@ find . -name "*.gradle" | while read -r gradle_file; do
     git add "$gradle_file"
 done
 
-git commit -m "Update Loom dependency configuration"
-git push origin $HOOKS_BRANCH
+if ! git diff --cached --quiet; then
+    git commit -m "Update Loom dependency configuration"
+    git push origin $HOOKS_BRANCH
+fi
 
 echo "Done"
 
