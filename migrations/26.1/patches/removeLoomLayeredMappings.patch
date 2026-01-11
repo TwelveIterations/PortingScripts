@@ -1,0 +1,23 @@
+Subject: [PATCH] Remove Loom Layered Mappings
+---
+Index: fabric/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/fabric/build.gradle b/fabric/build.gradle
+--- a/fabric/build.gradle	(revision ece17fdf9ee4a8bf3cadcec38e56b9cfd1f9013a)
++++ b/fabric/build.gradle	(date 1768126480991)
+@@ -9,12 +9,6 @@
+ 
+ dependencies {
+     minecraft libs.minecraft
+-    mappings loom.layered() {
+-        officialMojangMappings()
+-        parchment variantOf(libs.parchment) {
+-            artifactType('zip')
+-        }
+-    }
+     modImplementation libs.fabricLoader
+     modImplementation libs.fabricApi
+ }
