@@ -257,7 +257,7 @@ jobs:
         if: steps.loom.outputs.version != '' && inputs.update_plugins == true
         uses: TwelveIterations/update-gradle-version-catalog@v1
         with:
-          plugin: fabric-loom
+          plugin: net.fabricmc.fabric-loom
           version: ${{ steps.loom.outputs.version }}
       - name: Update Fabric API
         id: update-fabric-api
