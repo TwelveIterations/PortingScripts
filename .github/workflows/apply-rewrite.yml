@@ -60,6 +60,8 @@ jobs:
         uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
         with:
           hooks-directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/hooks/apply-rewrite/pre
+        env:
+          HOOKS_BRANCH: ${{ inputs.branch }}
       - name: Apply recipes
         id: apply-recipes
         run: |
@@ -139,7 +141,7 @@ jobs:
             ./gradlew rewriteRun --init-script="$GRADLE_REWRITE_INIT_SCRIPT" -Drewrite.activeRecipe="$ACTIVE_RECIPES"
             # Commit any changes made by rewrite (excluding recipes checkout directory)
             git add .
-            git reset HEAD "${{ steps.checkout-recipes.outputs.checkout_path }}" 2>/dev/null || true
+            git rm --cached "${{ steps.checkout-recipes.outputs.checkout_path }}" 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply automated code migrations"
               git push origin "${{ inputs.branch }}"
@@ -153,5 +155,7 @@ jobs:
         uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
         with:
           hooks-directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/hooks/apply-rewrite/post
+        env:
+          HOOKS_BRANCH: ${{ inputs.branch }}
     outputs:
       recipes: ${{ steps.apply-recipes.outputs.recipes }}
