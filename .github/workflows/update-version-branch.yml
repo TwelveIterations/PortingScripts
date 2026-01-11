@@ -88,8 +88,20 @@ jobs:
     outputs:
       migration_branch: ${{ steps.check-migration-branch.outputs.migration_branch }}
 
+  apply-rewrite:
+    needs: ensure-migration-branch
+    uses: TwelveIterations/PortingScripts/.github/workflows/apply-rewrite.yml@v1
+    with:
+      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
+      environment: ${{ inputs.environment }}
+      migrations: ${{ inputs.migrations }}/migrations/${{ inputs.minecraft_version }}
+      java_version: ${{ needs.update-version-catalog.outputs.java_version }}
+    secrets:
+      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
+      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
+
   apply-patches:
-    needs: [ensure-version-branch, ensure-migration-branch]
+    needs: [ensure-migration-branch, apply-rewrite]
     uses: TwelveIterations/PortingScripts/.github/workflows/apply-patches.yml@v1
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
@@ -100,7 +112,7 @@ jobs:
       AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
 
   update-version-catalog:
-    needs: [ensure-version-branch, ensure-migration-branch, apply-patches]
+    needs: [ensure-migration-branch, apply-patches]
     uses: TwelveIterations/PortingScripts/.github/workflows/update-version-catalog.yml@v1
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
@@ -159,20 +171,8 @@ jobs:
             git push origin "${{ needs.ensure-migration-branch.outputs.migration_branch }}"
           fi
 
-  apply-rewrite:
-    needs: [ensure-version-branch, ensure-migration-branch, update-version-catalog, update-gradle-properties]
-    uses: TwelveIterations/PortingScripts/.github/workflows/apply-rewrite.yml@v1
-    with:
-      branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
-      environment: ${{ inputs.environment }}
-      migrations: ${{ inputs.migrations }}/migrations/${{ inputs.minecraft_version }}
-      java_version: ${{ needs.update-version-catalog.outputs.java_version }}
-    secrets:
-      AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
-      AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}
-
   create-pull-request:
-    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties, apply-patches, apply-rewrite]
+    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
