@@ -13,9 +13,10 @@ on:
         type: string
         default: Automations
       migrations:
-        description: 'Migration repository with optional ref and path (format: org/repo@ref/path)'
+        description: 'Migration repository with optional ref (format: org/repo@ref)'
         required: false
         type: string
+        default: TwelveIterations/PortingScripts@v1
     secrets:
       AUTOMATIONS_APP_ID:
         required: true

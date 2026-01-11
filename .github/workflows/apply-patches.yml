@@ -14,7 +14,7 @@ on:
         default: Automations
       migrations:
         description: 'Migration repository with optional ref and path (format: org/repo@ref)'
-        required: false
+        required: true
         type: string
     secrets:
       AUTOMATIONS_APP_ID:
@@ -41,18 +41,13 @@ jobs:
       - name: Checkout repository for patches
         id: checkout-patches
         uses: TwelveIterations/PortingScripts/.github/actions/checkout-migrations@v1
-        if: inputs.migrations != ''
         with:
           migrations: ${{ inputs.migrations }}
           path: patches-repo
       - name: Apply git patches
         id: apply-patches
         run: |
-          if [ "${{ inputs.migrations }}" != "" ]; then
-            PATCHES_DIR="${{ steps.checkout-patches.outputs.path }}/patches"
-          else
-            PATCHES_DIR="patches"
-          fi
+          PATCHES_DIR="${{ steps.checkout-patches.outputs.path }}/patches"
           
           if [ -z "$PATCHES_DIR" ] || [ ! -d "$PATCHES_DIR" ]; then
             echo "No patches directory found"
@@ -102,9 +97,7 @@ jobs:
           if [ -n "$SUCCEEDED_PATCHES" ]; then
             # Add all changes but exclude the patches checkout directory
             git add .
-            if [ "${{ inputs.migrations }}" != "" ]; then
-              git reset HEAD "${{ steps.checkout-patches.outputs.path }}" 2>/dev/null || true
-            fi
+            git reset HEAD "${{ steps.checkout-patches.outputs.path }}" 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply migration patches"
               git push origin "${{ inputs.branch }}"

@@ -14,7 +14,7 @@ on:
         default: Automations
       migrations:
         description: 'Migration repository with optional ref (format: org/repo@ref)'
-        required: false
+        required: true
         type: string
       java_version:
         description: 'Java Version'
@@ -48,7 +48,6 @@ jobs:
       - name: Checkout repository for recipes
         id: checkout-recipes
         uses: TwelveIterations/PortingScripts/.github/actions/checkout-migrations@v1
-        if: inputs.migrations != ''
         with:
           migrations: ${{ inputs.migrations }}
           path: recipes-repo
@@ -64,11 +63,7 @@ jobs:
       - name: Apply recipes
         id: apply-recipes
         run: |
-          if [ "${{ inputs.migrations }}" != "" ]; then
-            RECIPES_DIR="${{ steps.checkout-recipes.outputs.path }}/recipes"
-          else
-            RECIPES_DIR="recipes"
-          fi
+          RECIPES_DIR="${{ steps.checkout-recipes.outputs.path }}/recipes"
           
           if [ -z "$RECIPES_DIR" ] || [ ! -d "$RECIPES_DIR" ]; then
             echo "No recipes directory found"
@@ -144,9 +139,7 @@ jobs:
             ./gradlew rewriteRun --init-script="$GRADLE_REWRITE_INIT_SCRIPT" -Drewrite.activeRecipe="$ACTIVE_RECIPES"
             # Commit any changes made by rewrite (excluding recipes checkout directory)
             git add .
-            if [ "${{ inputs.migrations }}" != "" ]; then
-              git reset HEAD "${{ steps.checkout-recipes.outputs.path }}" 2>/dev/null || true
-            fi
+            git reset HEAD "${{ steps.checkout-recipes.outputs.path }}" 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply automated code migrations"
               git push origin "${{ inputs.branch }}"
