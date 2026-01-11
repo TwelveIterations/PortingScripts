@@ -104,16 +104,16 @@ jobs:
           echo "$RECIPE_FILES"
           
           # OpenRewrite needs a single rewrite.yml file with all recipes
-          echo "" > recipes-repo/rewrite.yml
+          echo "" > ${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml
           
           ACTIVE_RECIPES=""
           
           for recipe_file in $RECIPE_FILES; do
             recipe_name=$(basename "$recipe_file")
             
-            echo "---" >> recipes-repo/rewrite.yml
-            cat "$recipe_file" >> recipes-repo/rewrite.yml
-            echo "" >> recipes-repo/rewrite.yml
+            echo "---" >> ${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml
+            cat "$recipe_file" >> ${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml
+            echo "" >> ${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml
             
             # Extract recipe name from YAML file
             extracted_name=$(grep "^name:" "$recipe_file" | cut -d: -f2- | sed 's/^ *//' | tr -d '\r\n')
@@ -126,6 +126,8 @@ jobs:
             fi
           done
           
+          cat ${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml
+
           echo "Active recipes: $ACTIVE_RECIPES"
           
           # Create rewrite.gradle in the recipes directory
