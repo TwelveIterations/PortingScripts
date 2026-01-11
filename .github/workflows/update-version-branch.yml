@@ -95,7 +95,6 @@ jobs:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       environment: ${{ inputs.environment }}
       migrations: ${{ inputs.migrations }}/migrations/${{ inputs.minecraft_version }}
-      java_version: ${{ needs.update-version-catalog.outputs.java_version }}
     secrets:
       AUTOMATIONS_APP_ID: ${{ secrets.AUTOMATIONS_APP_ID }}
       AUTOMATIONS_PRIVATE_KEY: ${{ secrets.AUTOMATIONS_PRIVATE_KEY }}

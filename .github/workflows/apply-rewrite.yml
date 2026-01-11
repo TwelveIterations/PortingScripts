@@ -16,11 +16,6 @@ on:
         description: 'Migration repository with ref and optional path (format: org/repo@ref/path)'
         required: true
         type: string
-      java_version:
-        description: 'Java Version'
-        required: false
-        type: string
-        default: '25'
     secrets:
       AUTOMATIONS_APP_ID:
         required: true
@@ -51,10 +46,26 @@ jobs:
         with:
           migrations: ${{ inputs.migrations }}
           path: recipes-repo
+      - name: Determine Java Version
+        id: java_version
+        run: |
+          if [ -f "gradle.properties" ]; then
+            JAVA_VERSION=$(grep "java_version\s*=" gradle.properties | cut -d'=' -f2 | tr -d ' \r\n')
+            if [ -n "$JAVA_VERSION" ]; then
+              echo "java_version=$JAVA_VERSION" >> "$GITHUB_OUTPUT"
+              echo "Found Java version $JAVA_VERSION in gradle.properties"
+            else
+              echo "java_version=25" >> "$GITHUB_OUTPUT"
+              echo "java_version property not found in gradle.properties, defaulting to 25"
+            fi
+          else
+            echo "java_version=25" >> "$GITHUB_OUTPUT"
+            echo "gradle.properties file not found, defaulting to Java 25"
+          fi
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: ${{ inputs.java_version }}
+          java-version: ${{ steps.java_version.outputs.java_version }}
           distribution: temurin
       - name: Convert IntelliJ migration maps to OpenRewrite recipes
         uses: TwelveIterations/intellij-to-openrewrite@v1
