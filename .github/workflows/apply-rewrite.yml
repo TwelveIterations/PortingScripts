@@ -56,6 +56,11 @@ jobs:
         with:
           java-version: ${{ inputs.java_version }}
           distribution: temurin
+      - name: Convert IntelliJ migration maps to OpenRewrite recipes
+        uses: TwelveIterations/intellij-to-openrewrite@v1
+        with:
+          input_directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/recipes
+          output_directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/recipes
       - name: Run pre hooks
         uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
         with:
