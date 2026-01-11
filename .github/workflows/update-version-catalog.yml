@@ -209,7 +209,7 @@ jobs:
           version: "${{ steps.normalize-minecraft-version.outputs.version }}.*"
       - name: Get ModDevGradle Version
         id: mdg
-        if: inputs.update_plugins == 'true'
+        if: inputs.update_plugins == true
         uses: TwelveIterations/get-neoforged-version@v1
         continue-on-error: true
         with:
@@ -217,7 +217,7 @@ jobs:
           version: "2.*"
       - name: Get Loom Version
         id: loom
-        if: inputs.update_plugins == 'true'
+        if: inputs.update_plugins == true
         run: |
           echo "version=1.14-SNAPSHOT" >> $GITHUB_OUTPUT
         continue-on-error: true
@@ -247,14 +247,14 @@ jobs:
           version: ${{ steps.minecraft.outputs.version }}
       - name: Update ModDevGradle
         id: update-mdg
-        if: steps.mdg.outputs.version != '' && inputs.update_plugins == 'true'
+        if: steps.mdg.outputs.version != '' && inputs.update_plugins == true
         uses: TwelveIterations/update-gradle-version-catalog@v1
         with:
           plugin: net.neoforged.moddev
           version: ${{ steps.mdg.outputs.version }}
       - name: Update Loom
         id: update-loom
-        if: steps.loom.outputs.version != '' && inputs.update_plugins == 'true'
+        if: steps.loom.outputs.version != '' && inputs.update_plugins == true
         uses: TwelveIterations/update-gradle-version-catalog@v1
         with:
           plugin: fabric-loom
