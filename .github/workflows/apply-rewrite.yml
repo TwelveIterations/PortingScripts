@@ -59,7 +59,7 @@ jobs:
       - name: Run pre hooks
         uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
         with:
-          hooks-directory: hooks/apply-rewrite/pre
+          hooks-directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/hooks/apply-rewrite/pre
       - name: Apply recipes
         id: apply-recipes
         run: |
@@ -152,6 +152,6 @@ jobs:
       - name: Run post hooks
         uses: TwelveIterations/PortingScripts/.github/actions/run-hooks@v1
         with:
-          hooks-directory: hooks/apply-rewrite/post
+          hooks-directory: ${{ steps.checkout-recipes.outputs.migrations_path }}/hooks/apply-rewrite/post
     outputs:
       recipes: ${{ steps.apply-recipes.outputs.recipes }}
