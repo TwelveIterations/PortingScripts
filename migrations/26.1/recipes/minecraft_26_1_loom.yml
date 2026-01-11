@@ -1,0 +1,40 @@
+type: specs.openrewrite.org/v1beta/recipe
+name: com.twelveiterations.minecraft_26_1_loom
+displayName: Update Loom for Minecraft 26.1
+description: Not functional for the most part because OpenRewrite does not support version catalogs. Only kept for reference and the wrapper update.
+recipeList:
+  - org.openrewrite.gradle.UpdateGradleWrapper:
+      version: 9.3.0-rc-1
+  - org.openrewrite.gradle.ChangePlugin:
+      pluginId: "fabric-loom"
+      newPluginId: "net.fabricmc.fabric-loom"
+      newVersion: "1.14-SNAPSHOT"
+  - org.openrewrite.gradle.RemoveDependency:
+      groupId: "*"
+      artifactId: "*"
+      configuration: mappings
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+      groupId: "*"
+      artifactId: "*"
+      configuration: modImplementation
+      newConfiguration: implementation
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+      groupId: "*"
+      artifactId: "*"
+      configuration: modCompileOnly
+      newConfiguration: compileOnly
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+      groupId: "*"
+      artifactId: "*"
+      configuration: modRuntimeOnly
+      newConfiguration: runtimeOnly
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+      groupId: "*"
+      artifactId: "*"
+      configuration: modApi
+      newConfiguration: api
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+      groupId: "*"
+      artifactId: "*"
+      configuration: modLocalRuntime
+      newConfiguration: localRuntime
