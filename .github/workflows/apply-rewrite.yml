@@ -160,6 +160,8 @@ jobs:
 
           # Run Gradle rewrite task if we have recipes
           if [ -n "$ACTIVE_RECIPES" ]; then
+            # Run gradlew once as a workaround for ForgeGradle
+            ./gradlew
             ./gradlew rewriteRun --init-script="$GRADLE_REWRITE_INIT_SCRIPT" -Drewrite.activeRecipe="$ACTIVE_RECIPES"
             # Commit any changes made by rewrite (excluding recipes checkout directory)
             git add .
