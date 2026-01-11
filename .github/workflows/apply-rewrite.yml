@@ -63,7 +63,7 @@ jobs:
       - name: Apply recipes
         id: apply-recipes
         run: |
-          RECIPES_DIR="${{ steps.checkout-recipes.outputs.path }}/recipes"
+          RECIPES_DIR="${{ steps.checkout-recipes.outputs.migrations_path }}/recipes"
           
           if [ -z "$RECIPES_DIR" ] || [ ! -d "$RECIPES_DIR" ]; then
             echo "No recipes directory found"
@@ -111,7 +111,7 @@ jobs:
           echo "Active recipes: $ACTIVE_RECIPES"
           
           # Create rewrite.gradle in the recipes directory
-          GRADLE_REWRITE_INIT_SCRIPT="${{ steps.checkout-recipes.outputs.path }}/rewrite.gradle"
+          GRADLE_REWRITE_INIT_SCRIPT="${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.gradle"
           echo "initscript {" > "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "    repositories {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "        gradlePluginPortal()" >> "$GRADLE_REWRITE_INIT_SCRIPT"
@@ -139,7 +139,7 @@ jobs:
             ./gradlew rewriteRun --init-script="$GRADLE_REWRITE_INIT_SCRIPT" -Drewrite.activeRecipe="$ACTIVE_RECIPES"
             # Commit any changes made by rewrite (excluding recipes checkout directory)
             git add .
-            git reset HEAD "${{ steps.checkout-recipes.outputs.path }}" 2>/dev/null || true
+            git reset HEAD "${{ steps.checkout-recipes.outputs.checkout_path }}" 2>/dev/null || true
             if ! git diff --cached --quiet; then
               git commit -m "Apply automated code migrations"
               git push origin "${{ inputs.branch }}"
