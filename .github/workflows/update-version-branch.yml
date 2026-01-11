@@ -116,7 +116,7 @@ jobs:
     with:
       branch: ${{ needs.ensure-migration-branch.outputs.migration_branch }}
       environment: ${{ inputs.environment }}
-      minecraft_version: ${{ needs.ensure-version-branch.outputs.version_branch }}
+      minecraft_version: ${{ inputs.minecraft_version }}
       commit_directly: true
       update_plugins: true
     secrets:
@@ -171,7 +171,7 @@ jobs:
           fi
 
   create-pull-request:
-    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties]
+    needs: [ensure-version-branch, ensure-migration-branch, update-gradle-properties, apply-patches]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
