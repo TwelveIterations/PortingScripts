@@ -148,7 +148,7 @@ jobs:
           echo "    }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "" >> "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "    rewrite {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
-          echo "        configFile = file('$${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml')" >> "$GRADLE_REWRITE_INIT_SCRIPT"
+          echo "        configFile = file('${{ steps.checkout-recipes.outputs.checkout_path }}/rewrite.yml')" >> "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "    }" >> "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "" >> "$GRADLE_REWRITE_INIT_SCRIPT"
           echo "    afterEvaluate {" >> "$GRADLE_REWRITE_INIT_SCRIPT"
