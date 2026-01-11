@@ -2,15 +2,18 @@ name: 'Checkout Migrations'
 description: 'Parses migrations input and checks out with optional ref and path'
 inputs:
   migrations:
-    description: 'Migration repository with optional ref (format: org/repo@ref)'
+    description: 'Migration repository with optional ref and path (format: org/repo@ref/path)'
     required: true
   path:
     description: 'Path to checkout the repository to (relative to current directory). If not provided, uses repository name'
     required: false
 outputs:
-  path:
+  checkout_path:
     description: 'Path where repository was checked out'
-    value: ${{ steps.parse.outputs.path }}
+    value: ${{ steps.parse.outputs.checkout_path }}
+  migrations_path:
+    description: 'Path where migrations are located'
+    value: ${{ steps.parse.outputs.migrations_path }}
   repository:
     description: 'Parsed repository name'
     value: ${{ steps.parse.outputs.repository }}
@@ -26,12 +29,21 @@ runs:
       run: |
         MIGRATIONS_INPUT="${{ inputs.migrations }}"
         
-        # Extract ref if present (after @)
-        if [[ "$MIGRATIONS_INPUT" == *"@"* ]]; then
-          REPO="${MIGRATIONS_INPUT%%@*}"
-          REF="${MIGRATIONS_INPUT##*@}"
+        # Extract path if present (after /)
+        if [[ "$MIGRATIONS_INPUT" == *"/"* ]]; then
+          REPO_PART="${MIGRATIONS_INPUT%%/*}"
+          MIGRATIONS_SUBPATH="${MIGRATIONS_INPUT##*/}"
         else
-          REPO="$MIGRATIONS_INPUT"
+          REPO_PART="$MIGRATIONS_INPUT"
+          MIGRATIONS_SUBPATH="migrations"
+        fi
+        
+        # Extract ref if present (after @)
+        if [[ "$REPO_PART" == *"@"* ]]; then
+          REPO="${REPO_PART%%@*}"
+          REF="${REPO_PART##*@}"
+        else
+          REPO="$REPO_PART"
           REF="main"
         fi
         
@@ -43,18 +55,27 @@ runs:
           CHECKOUT_PATH="${REPO##*/}"
         fi
         
+        # Determine migrations path (relative to checkout path)
+        if [ "$MIGRATIONS_SUBPATH" != "migrations" ]; then
+          MIGRATIONS_PATH="$CHECKOUT_PATH/$MIGRATIONS_SUBPATH"
+        else
+          MIGRATIONS_PATH="$CHECKOUT_PATH/migrations"
+        fi
+        
         echo "repository=$REPO" >> $GITHUB_OUTPUT
         echo "ref=$REF" >> $GITHUB_OUTPUT
-        echo "path=$CHECKOUT_PATH" >> $GITHUB_OUTPUT
+        echo "checkout_path=$CHECKOUT_PATH" >> $GITHUB_OUTPUT
+        echo "migrations_path=$MIGRATIONS_PATH" >> $GITHUB_OUTPUT
         
         echo "Repository: $REPO"
         echo "Ref: $REF"
-        echo "Path: $CHECKOUT_PATH"
+        echo "Checkout path: $CHECKOUT_PATH"
+        echo "Migrations path: $MIGRATIONS_PATH"
     
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         repository: ${{ steps.parse.outputs.repository }}
         ref: ${{ steps.parse.outputs.ref }}
-        path: ${{ steps.parse.outputs.path }}
+        path: ${{ steps.parse.outputs.checkout_path }}
         token: ${{ github.token }}
