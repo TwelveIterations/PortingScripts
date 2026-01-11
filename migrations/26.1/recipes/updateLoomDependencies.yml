@@ -1,0 +1,30 @@
+type: specs.openrewrite.org/v1beta/recipe
+name: com.twelveiterations.UpdateLoomDependencyConfigurations
+displayName: Update Loom dependency configurations
+description: Updates Loom dependency configurations from `modImplementation` to `implementation` etc. in Gradle dependency configurations.
+recipeList:
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modImplementation
+    newConfiguration: implementation
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modCompileOnly
+    newConfiguration: compileOnly
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modRuntimeOnly
+    newConfiguration: runtimeOnly
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modApi
+    newConfiguration: api
+  - org.openrewrite.gradle.ChangeDependencyConfiguration:
+    groupId: "*"
+    artifactId: "*"
+    configuration: modLocalRuntime
+    newConfiguration: localRuntime
