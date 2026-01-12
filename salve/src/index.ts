@@ -1,0 +1,73 @@
+#!/usr/bin/env bun
+
+import { Command } from 'commander';
+import { fetchUnreleasedCommits } from './commands/fetch-unreleased-commits';
+import { authGitHub, authStatus, authLogout } from './commands/auth';
+import { changelog } from './commands/changelog';
+import { release } from './commands/release';
+import { config } from './commands/config';
+
+const program = new Command();
+
+program
+  .name('salve')
+  .description('Salve CLI')
+  .version('1.0.0');
+
+const auth = program
+  .command('auth')
+  .description('Manage GitHub authentication');
+
+auth
+  .command('github')
+  .description('Authenticate with GitHub using OAuth device flow')
+  .action(authGitHub);
+
+auth
+  .command('status')
+  .description('Check GitHub authentication status')
+  .action(authStatus);
+
+auth
+  .command('logout')
+  .description('Log out from GitHub')
+  .action(authLogout);
+
+program
+  .command('unreleased')
+  .description('Fetch unreleased commits for repositories')
+  .requiredOption('--branch <branch>', 'Version branch to analyze (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--max-repos <num>', 'Maximum repositories to process', '100')
+  .option('--json', 'Output results in JSON format')
+  .option('--verbose', 'Show detailed progress logs')
+  .action(fetchUnreleasedCommits);
+
+program
+  .command('changelog')
+  .description('Generate changelog from commits since last version')
+  .requiredOption('--repo <repo>', 'Repository name (folder name in repositoriesPath)')
+  .requiredOption('--branch <branch>', 'Version branch to analyze (e.g., 1.20.1)')
+  .action(changelog);
+
+program
+  .command('release')
+  .description('Trigger release workflow for a mod')
+  .requiredOption('--branch <branch>', 'Version branch to release (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--loader <loader>', 'Loader to release for (defaults to all supported)')
+  .option('--dry', 'Dry run - do not trigger release workflows')
+  .option('--force', 'Force release, bypassing all safety checks')
+  .action(release);
+
+program
+  .command('config')
+  .description('Open configuration file in editor')
+  .action(config);
+
+program.parse();

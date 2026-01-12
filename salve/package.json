@@ -1,0 +1,26 @@
+{
+  "name": "salve",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "salve": "src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@octokit/auth-oauth-device": "^8.0.3",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "octokit": "^5.0.5",
+    "launch-editor": "^2.6.0",
+    "zod": "^4.3.5"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "excludedRepositories": [
+    "TwelveIterations/balm-mod",
+    "TwelveIterations/balm-docs"
+  ],
+  "organization": "TwelveIterations",
+  "team": "minecraft-java",
+  "repositoriesPath": "/home/blay/IdeaProjects/Minecraft Modding/"
+}
