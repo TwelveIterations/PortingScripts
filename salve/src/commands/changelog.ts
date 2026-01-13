@@ -5,7 +5,7 @@ import { existsSync } from 'fs';
 import launchEditor from 'launch-editor';
 import type { Commit } from '../utils/changelog-utils';
 import { error, success, info, debug, promptUser } from '../utils/console';
-import { isVersionCommit, generateChangelog, isChangelogCommit } from '../utils/changelog-utils';
+import { isVersionCommit, generateChangelog } from '../utils/changelog-utils';
 import { hasUncommittedChanges, commitChanges, addFile, pushChanges, getCommitsToPush, getGitStatus, getCommitLog } from '../utils/git-utils';
 import { findRepository } from '../utils/fuzzy-search';
 
@@ -30,15 +30,18 @@ async function getNonChangelogChanges(repoPath: string): Promise<string[]> {
   }
 }
 
-async function hasUncommittedChangelogChanges(repoPath: string): Promise<boolean> {
+async function hasEffectiveChangelogChanges(repoPath: string): Promise<boolean> {
   try {
-    const result = await getGitStatus(repoPath);
-    const lines = result.split('\n').filter(l => l.length > 0);
+    const changelogPath = join(repoPath, 'CHANGELOG.md');
+    if (!existsSync(changelogPath)) return false;
     
-    return lines.some(line => {
-      const parts = line.trim().split(/\s+/);
-      return parts.length >= 2 && parts[1] === 'CHANGELOG.md';
-    });
+    const content = await Bun.file(changelogPath).text();
+    const lines = content.split('\n');
+    const filteredLines = lines.filter(line => !line.startsWith('>'));
+    const effectiveContent = filteredLines.join('\n').trim();
+    
+    // Check if there are effective changes (non-commented content)
+    return effectiveContent.length > 0;
   } catch (err) {
     return false;
   }
@@ -47,10 +50,10 @@ async function hasUncommittedChangelogChanges(repoPath: string): Promise<boolean
 async function prepareChangelogForEdit(repoPath: string, commits: Commit[]): Promise<void> {
   const changelogPath = join(repoPath, 'CHANGELOG.md');
   
-  const hasChangelogChanges = await hasUncommittedChangelogChanges(repoPath);
+  const hasChangelogChanges = await hasEffectiveChangelogChanges(repoPath);
   
   let existingContent = '';
-  if (hasChangelogChanges ) {
+  if (hasChangelogChanges) {
     existingContent = await Bun.file(changelogPath).text();
       const lines = existingContent.split('\n');
       const filteredLines = lines.filter(line => !line.startsWith('>'));
@@ -114,7 +117,7 @@ async function getLocalCommitsSinceVersion(repoPath: string): Promise<Commit[]> 
       const hash = line.substring(0, spaceIdx);
       const message = line.substring(spaceIdx + 1);
       
-      if (isVersionCommit(message) || isChangelogCommit(message)) {
+      if (isVersionCommit(message)) {
         break;
       }
       
