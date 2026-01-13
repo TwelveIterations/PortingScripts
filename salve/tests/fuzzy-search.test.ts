@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { findRepository } from '../src/utils/fuzzy-search';
+import { findRepository, findRepositoryByInitials, findRepositoryByCamelCasePattern } from '../src/utils/fuzzy-search';
 
 describe('findRepository', () => {
   let testDir: string;
@@ -16,6 +16,8 @@ describe('findRepository', () => {
     // Create test repository directories
     const testRepos = [
       'CraftingSlots',
+      'CraftingTweaks',
+      'ClientTweaks',
       'MyAwesomeRepo', 
       'SimpleAPI',
       'DataProcessor',
@@ -104,5 +106,47 @@ describe('findRepository', () => {
     expect(result1).toBe('CraftingSlots');
     expect(result2).toBe('CraftingSlots');
     expect(result3).toBe('CraftingSlots');
+  });
+
+  it('should prefer ClientTweaks over CraftingTweaks when searching for CliTwe', () => {
+    const result = findRepository('CliTwe', 'main', testDir);
+    expect(result).toBe('ClientTweaks');
+  });
+
+  it('should handle partial matches correctly', () => {
+    const result = findRepository('Client', 'main', testDir);
+    expect(result).toBe('ClientTweaks');
+  });
+
+  it('should prefer better match when multiple repositories have same initials', () => {
+    // Test with a pattern that could match both CraftingTweaks and ClientTweaks
+    // CliTwe should prefer ClientTweaks because it has better consecutive character match
+    const result = findRepository('CliTwe', 'main', testDir);
+    expect(result).toBe('ClientTweaks');
+  });
+
+  it('should handle case where CraftingTweaks might come first in directory listing', () => {
+    // Create a custom test with repositories in different order
+    const customTestRepos = [
+      'CraftingTweaks',  // This comes first
+      'ClientTweaks',   // This comes second
+      'OtherRepo'
+    ];
+
+    // Manually test the initials matching logic
+    const result = findRepositoryByInitials('CliTwe', customTestRepos);
+    expect(result).toBe('ClientTweaks'); // Should still prefer ClientTweaks despite order
+  });
+
+  it('should test camelCase pattern matching directly', () => {
+    const testRepos = ['ClientTweaks', 'CraftingTweaks', 'OtherRepo'];
+    
+    // CliTwe should match ClientTweaks but not CraftingTweaks
+    const result = findRepositoryByCamelCasePattern('CliTwe', testRepos);
+    expect(result).toBe('ClientTweaks');
+    
+    // CraTwe should match CraftingTweaks but not ClientTweaks
+    const result2 = findRepositoryByCamelCasePattern('CraTwe', testRepos);
+    expect(result2).toBe('CraftingTweaks');
   });
 });

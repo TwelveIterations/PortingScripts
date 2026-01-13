@@ -28,6 +28,7 @@ export function fuzzySearch(
   });
 
   const results = fuse.search(pattern);
+  
   if (results.length > 0) {
     const bestMatch = results[0];
     if (bestMatch && bestMatch.score !== undefined && bestMatch.score < scoreThreshold) {
@@ -69,19 +70,119 @@ export function findRepository(
   return fuzzySearch(repoPattern, repositories, options);
 }
 
-function findRepositoryByInitials(initials: string, repositories: string[]): string | null {
+export function findRepositoryByInitials(initials: string, repositories: string[]): string | null {
   // Check if the pattern looks like initials (alternating case or all uppercase)
   if (!isInitialsPattern(initials)) {
     return null;
   }
 
+  // First try camelCase pattern matching (for patterns like "CliTwe")
+  const camelCaseMatch = findRepositoryByCamelCasePattern(initials, repositories);
+  if (camelCaseMatch) {
+    return camelCaseMatch;
+  }
+
+  // Fall back to traditional initials matching
+  const matches: string[] = [];
+  
   for (const repo of repositories) {
     if (matchesInitials(initials, repo)) {
+      matches.push(repo);
+    }
+  }
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  if (matches.length === 1) {
+    return matches[0] || null;
+  }
+
+  // Multiple initials matches - return the first one (traditional behavior)
+  return matches[0] || null;
+}
+
+export function findRepositoryByCamelCasePattern(pattern: string, repositories: string[]): string | null {
+  // Only apply this to patterns that have clear camelCase boundaries (like "CliTwe")
+  if (!hasCamelCaseBoundaries(pattern)) {
+    return null;
+  }
+
+  for (const repo of repositories) {
+    if (matchesCamelCasePattern(pattern, repo)) {
       return repo;
     }
   }
 
   return null;
+}
+
+function hasCamelCaseBoundaries(pattern: string): boolean {
+  // Check if pattern has uppercase letters that indicate word boundaries
+  let uppercaseCount = 0;
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+    if (char && /[a-zA-Z]/.test(char) && char === char.toUpperCase() && char !== char.toLowerCase()) {
+      uppercaseCount++;
+    }
+  }
+  return uppercaseCount >= 2; // At least 2 uppercase letters for clear boundaries
+}
+
+function matchesCamelCasePattern(pattern: string, repository: string): boolean {
+  // Extract the pattern segments from the camelCase pattern
+  const patternSegments = extractCamelCaseSegments(pattern);
+  if (patternSegments.length === 0) {
+    return false;
+  }
+
+  // Extract repository segments
+  const repoSegments = extractCamelCaseSegments(repository);
+  if (repoSegments.length === 0) {
+    return false;
+  }
+
+  // Check if each pattern segment matches the beginning of corresponding repo segments
+  if (patternSegments.length > repoSegments.length) {
+    return false;
+  }
+
+  for (let i = 0; i < patternSegments.length; i++) {
+    const patternSeg = patternSegments[i];
+    const repoSeg = repoSegments[i];
+    
+    if (!patternSeg || !repoSeg || !repoSeg.toLowerCase().startsWith(patternSeg.toLowerCase())) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function extractCamelCaseSegments(name: string): string[] {
+  const segments: string[] = [];
+  let currentSegment = '';
+  
+  for (let i = 0; i < name.length; i++) {
+    const char = name[i];
+    
+    if (!char) continue;
+    
+    // If we hit an uppercase letter (and it's not the first character), start a new segment
+    if (char === char.toUpperCase() && char !== char.toLowerCase() && currentSegment.length > 0) {
+      segments.push(currentSegment);
+      currentSegment = char;
+    } else {
+      currentSegment += char;
+    }
+  }
+  
+  if (currentSegment.length > 0) {
+    segments.push(currentSegment);
+  }
+  
+  return segments;
 }
 
 function isInitialsPattern(pattern: string): boolean {
