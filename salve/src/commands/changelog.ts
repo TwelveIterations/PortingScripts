@@ -7,6 +7,7 @@ import type { Commit } from '../utils/changelog-utils';
 import { error, success, info, debug, promptUser } from '../utils/console';
 import { isVersionCommit, generateChangelog, isChangelogCommit } from '../utils/changelog-utils';
 import { hasUncommittedChanges, commitChanges, addFile, pushChanges, getCommitsToPush, getGitStatus, getCommitLog } from '../utils/git-utils';
+import { findRepository } from '../utils/fuzzy-search';
 
 interface Options {
   repo: string;
@@ -134,7 +135,13 @@ export async function changelog(repo: string, branch: string): Promise<void> {
     process.exit(1);
   }
   
-  const repoPath = join(config.repositoriesPath, branch, repo);
+  const matchedRepo = findRepository(repo, branch, config.repositoriesPath);
+  if (!matchedRepo) {
+    error(`Repository '${repo}' not found in branch '${branch}'`);
+    process.exit(1);
+  }
+  
+  const repoPath = join(config.repositoriesPath, branch, matchedRepo);
   if (!existsSync(repoPath)) {
     error(`Repository not found at: ${repoPath}`);
     process.exit(1);

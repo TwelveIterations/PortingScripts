@@ -1,43 +1,9 @@
 import { loadConfig } from '../config';
-import { existsSync, readdirSync } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import launchEditor from 'launch-editor';
 import { error, info } from '../utils/console';
-import Fuse from 'fuse.js';
-
-function findRepository(repoPattern: string, branch: string, repositoriesPath: string): string | null {
-  const branchPath = join(repositoriesPath, branch);
-  if (!existsSync(branchPath)) {
-    return null;
-  }
-
-  const repositories = readdirSync(branchPath, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name);
-
-  // If exact match, return it
-  const exactMatch = repositories.find(repo => repo === repoPattern);
-  if (exactMatch) {
-    return exactMatch;
-  }
-
-  // Use fuzzy search for partial matches
-  const fuse = new Fuse(repositories, {
-    keys: ['name'],
-    threshold: 0.3, // Lower threshold = more strict matching
-    includeScore: true
-  });
-
-  const results = fuse.search(repoPattern);
-  if (results.length > 0) {
-    const bestMatch = results[0];
-    if (bestMatch && bestMatch.score !== undefined && bestMatch.score < 0.4) {
-      return bestMatch.item;
-    }
-  }
-
-  return null;
-}
+import { findRepository } from '../utils/fuzzy-search';
 
 export async function ide(repo: string, branch: string) {
   const config = await loadConfig();
