@@ -3,6 +3,7 @@ import { getOctokit } from "../github";
 import { loadConfig } from "../config";
 import { error, success, debug, info, warn, promptUser } from "../utils/console";
 import { getLastCommitMessage, getCommitsSinceVersionTag, hasUncommittedChanges, getCommitsToPush, getCommitLog, pullChanges, hasLocalClone } from "../utils/git-utils";
+import { parseCommitMessage } from "../utils/changelog-utils";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";
@@ -24,7 +25,7 @@ interface LoaderConfig {
   forge: boolean;
 }
 
-async function getCommitsWithHashes(repoPath: string): Promise<{ hash: string; message: string }[]> {
+async function getCommitsWithHashes(repoPath: string, filterMetaCommits: boolean = false): Promise<{ hash: string; message: string }[]> {
   try {
     const result = await getCommitLog(repoPath);
     const lines = result.split('\n').filter(l => l.length > 0);
@@ -41,6 +42,13 @@ async function getCommitsWithHashes(repoPath: string): Promise<{ hash: string; m
       // Stop at version commit
       if (message.includes('Set version to')) {
         break;
+      }
+      
+      if (filterMetaCommits) {
+        const parsed = parseCommitMessage(message);
+        if (parsed.isMetaCommit) {
+          continue;
+        }
       }
       
       commits.push({ hash: hash.substring(0, 7), message });
@@ -302,11 +310,11 @@ export async function release(options: ReleaseOptions): Promise<void> {
         }
 
         if (!options.force) {
-          const commitsSinceVersion = await getCommitsSinceVersionTag(localRepoPath);
-          if (commitsSinceVersion.length === 0) {
+          const meaningfulCommits = await getCommitsWithHashes(localRepoPath, true);
+          if (meaningfulCommits.length === 0) {
             // Only log an error if the repo was explicitly specified
             if (options.repo) {
-                error(`No commits since last version commit for ${repoFullName}. Skipping.`);
+                error(`No meaningful commits since last version commit for ${repoFullName}. Skipping.`);
                 errorCount++;
             }
             continue;
