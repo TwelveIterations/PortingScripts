@@ -10,7 +10,6 @@ interface Options {
   org?: string;
   team?: string;
   pattern?: string;
-  json?: boolean;
   verbose?: boolean;
 }
 
@@ -192,7 +191,7 @@ export async function fetchUnreleasedCommits(branch: string, options: Options): 
   const results: Record<string, Commit[]> = {};
   let totalCommits = 0;
 
-  const showProgress = !options.verbose && !options.json;
+  const showProgress = !options.verbose;
   
   for (let i = 0; i < repositories.length; i++) {
     const repo = repositories[i]!;
@@ -217,23 +216,19 @@ export async function fetchUnreleasedCommits(branch: string, options: Options): 
     clearLine();
   }
 
-  if (options.json) {
-    console.log(JSON.stringify(results, null, 2));
-  } else {
-    console.log();
-    console.log(chalk.bold('Unreleased Commits Summary'));
+  console.log();
+  console.log(chalk.bold('Unreleased Commits Summary'));
 
-    for (const [repo, commits] of Object.entries(results)) {
-      console.log();
-      console.log(chalk.underline(repo));
-      for (const commit of commits) {
-        console.log(`  ${commit.hash} - ${commit.message}`);
-      }
+  for (const [repo, commits] of Object.entries(results)) {
+    console.log();
+    console.log(chalk.underline(repo));
+    for (const commit of commits) {
+      console.log(`  ${commit.hash} - ${commit.message}`);
     }
-
-    console.log();
-    console.log(chalk.bold(`Total: ${totalCommits} commits`));
   }
+
+  console.log();
+  console.log(chalk.bold(`Total: ${totalCommits} commits`));
 
   success('Analysis completed');
 }
