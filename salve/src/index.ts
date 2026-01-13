@@ -6,6 +6,7 @@ import { authGitHub, authStatus, authLogout } from './commands/auth';
 import { changelog } from './commands/changelog';
 import { release } from './commands/release';
 import { patch } from './commands/patch';
+import { copyFileToRepos } from './commands/copy';
 import { config } from './commands/config';
 import { ide } from './commands/ide';
 
@@ -77,6 +78,17 @@ program
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
   .option('--repo <repo>', 'Repository name (defaults to all)')
   .action(patch);
+
+program
+  .command('copy')
+  .description('Copy a file to repositories')
+  .argument('<file>', 'Path to the file to copy')
+  .requiredOption('--branch <branch>', 'Version branch to copy file to (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .action(copyFileToRepos);
 
 program
   .command('config')
