@@ -46,24 +46,15 @@ async function hasEffectiveChangelogChanges(repoPath: string): Promise<boolean> 
   }
 }
 
-async function prepareChangelogForEdit(repoPath: string, commits: Commit[]): Promise<void> {
+export async function prepareChangelogForEdit(repoPath: string, commits: Commit[]): Promise<void> {
   const changelogPath = join(repoPath, 'CHANGELOG.md');
   
-  const hasChangelogChanges = await hasEffectiveChangelogChanges(repoPath);
-  
-  let existingContent = '';
-  if (hasChangelogChanges) {
-    existingContent = await Bun.file(changelogPath).text();
-      const lines = existingContent.split('\n');
-      const filteredLines = lines.filter(line => !line.startsWith('>'));
-      existingContent = filteredLines.join('\n');
-  } else {
-    existingContent = generateChangelog(commits);
-  }
+  // Always generate new changelog from commits
+  const generatedContent = generateChangelog(commits);
 
-    const commentedCommits = commits.map(commit => `> ${commit.hash} ${commit.message}`).join('\n');
-    const newContent = existingContent + (existingContent && !existingContent.endsWith('\n') ? '\n' : '') + commentedCommits + '\n';
-    await Bun.write(changelogPath, newContent);
+  const commentedCommits = commits.map(commit => `> ${commit.hash} ${commit.message}`).join('\n');
+  const newContent = generatedContent + (generatedContent && !generatedContent.endsWith('\n') ? '\n' : '') + commentedCommits + '\n';
+  await Bun.write(changelogPath, newContent);
 }
 
 async function removeCommentedLines(repoPath: string): Promise<void> {
