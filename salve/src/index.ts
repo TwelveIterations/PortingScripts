@@ -7,6 +7,7 @@ import { changelog } from './commands/changelog';
 import { release } from './commands/release';
 import { patch } from './commands/patch';
 import { config } from './commands/config';
+import { ide } from './commands/ide';
 
 const program = new Command();
 
@@ -81,5 +82,12 @@ program
   .command('config')
   .description('Open configuration file in editor')
   .action(config);
+
+program
+  .command('ide')
+  .description('Open a repository in the configured IDE')
+  .argument('<repo>', 'Repository name')
+  .argument('<branch>', 'Version branch')
+  .action(ide);
 
 program.parse();

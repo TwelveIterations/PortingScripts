@@ -19,8 +19,9 @@
     "@octokit/auth-oauth-device": "^8.0.3",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
-    "octokit": "^5.0.5",
+    "fuse.js": "^7.1.0",
     "launch-editor": "^2.6.0",
+    "octokit": "^5.0.5",
     "zod": "^4.3.5"
   }
 }
