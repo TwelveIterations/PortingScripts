@@ -63,7 +63,16 @@ export function categorizeCommit(type: string): keyof GroupedChanges {
   return typeMap[type] || 'changed';
 }
 
+export function stripIssueSuffixes(description: string): string {
+  // Remove patterns like (#123) or #123 from the end of the description
+  // Only match complete patterns at the end, with optional trailing whitespace
+  return description.replace(/\s*(?:\(#\d+\)|#\d+)\s*$/, '').trim();
+}
+
 export function formatDescription(description: string): string {
+  // Strip issue suffixes first
+  description = stripIssueSuffixes(description);
+  
   // Change prefixes to past tense
   const prefixMap: Record<string, string> = {
     'Add ': 'Added ',
