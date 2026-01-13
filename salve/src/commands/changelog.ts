@@ -189,6 +189,10 @@ export async function changelog(repo: string, branch: string, options: Options):
         }
         
         process.exit(1);
+      } else {
+        // User refused to commit, don't regenerate the changelog
+        launchEditor(changelogPath, 'nano');
+        return;
       }
     }
   }
