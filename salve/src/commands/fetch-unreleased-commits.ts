@@ -2,7 +2,7 @@ import type { Octokit } from 'octokit';
 import { loadConfig, type Config } from '../config';
 import { getOctokit, checkAuth } from '../github';
 import type { Commit } from '../utils/changelog-utils';
-import { isVersionCommit } from '../utils/changelog-utils';
+import { isVersionCommit, parseCommitMessage } from '../utils/changelog-utils';
 import { error, success, warn, setVerboseMode, debug, renderProgressBar, clearLine } from '../utils/console';
 import chalk from 'chalk';
 
@@ -120,10 +120,18 @@ async function getUnreleasedCommits(octokit: Octokit, repo: string, branch: stri
 
     if (versionIdx === -1) {
       warn(`No 'Set version to' commit found in ${repo}, returning recent commits`);
-      return commits.slice(0, 50).map((c) => ({
+      const allCommits = commits.slice(0, 50).map((c) => ({
         hash: c.sha.substring(0, 7),
         message: c.commit.message?.split('\n')[0] ?? '',
       }));
+      
+      // Filter out build/chore/ci commits
+      const meaningfulCommits = allCommits.filter(commit => {
+        const parsed = parseCommitMessage(commit.message);
+        return !parsed.isMetaCommit; // Skip meta commits (build/chore/ci)
+      });
+      
+      return meaningfulCommits;
     }
 
     if (versionIdx === 0) {
@@ -131,11 +139,19 @@ async function getUnreleasedCommits(octokit: Octokit, repo: string, branch: stri
       return [];
     }
 
-    // Return commits before the version commit (newer ones)
-    return commits.slice(0, versionIdx).map((c) => ({
+    // Return commits before the version commit (newer ones), but filter out build/chore/ci commits
+    const allCommits = commits.slice(0, versionIdx).map((c) => ({
       hash: c.sha.substring(0, 7),
       message: c.commit.message?.split('\n')[0] ?? '',
     }));
+    
+    // Filter out build/chore/ci commits
+    const meaningfulCommits = allCommits.filter(commit => {
+      const parsed = parseCommitMessage(commit.message);
+      return !parsed.isMetaCommit; // Skip meta commits (build/chore/ci)
+    });
+    
+    return meaningfulCommits;
   } catch (err) {
     warn(`Failed to fetch commits for ${repo}`);
     return [];

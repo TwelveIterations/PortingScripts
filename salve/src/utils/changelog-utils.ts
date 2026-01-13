@@ -10,8 +10,8 @@ interface GroupedChanges {
   removed: string[];
 }
 
-export function parseCommitMessage(message: string): { type: string; description: string } | null {
-  const skipPrefixes = ['build', 'ci', 'chore'];
+export function parseCommitMessage(message: string): { type: string; description: string; isMetaCommit: boolean } {
+  const metaPrefixes = ['build', 'ci', 'chore'];
   
   // Check for conventional commit format: type(scope): description or type: description
   const conventionalMatch = message.match(/^(\w+)(?:\([^)]*\))?:\s*(.+)$/);
@@ -19,12 +19,9 @@ export function parseCommitMessage(message: string): { type: string; description
   if (conventionalMatch) {
     const type = conventionalMatch[1]!.toLowerCase();
     const description = conventionalMatch[2]!;
+    const isMetaCommit = metaPrefixes.includes(type);
     
-    if (skipPrefixes.includes(type)) {
-      return null;
-    }
-    
-    return { type, description };
+    return { type, description, isMetaCommit };
   }
   
   // Check for simple prefix format: Add/Fix/Remove/Change/Update something
@@ -34,11 +31,11 @@ export function parseCommitMessage(message: string): { type: string; description
     const prefix = simplePrefixMatch[1]!.toLowerCase();
     const description = simplePrefixMatch[2]!;
     
-    return { type: prefix, description };
+    return { type: prefix, description, isMetaCommit: false };
   }
   
   // Default to "changed" for unrecognized formats
-  return { type: 'change', description: message };
+  return { type: 'change', description: message, isMetaCommit: false };
 }
 
 export function categorizeCommit(type: string): keyof GroupedChanges {
@@ -87,7 +84,7 @@ export function generateChangelog(commits: Commit[]): string {
   
   for (const commit of commits) {
     const parsed = parseCommitMessage(commit.message);
-    if (!parsed) continue;
+    if (parsed.isMetaCommit) continue; // Skip meta commits
     
     const category = categorizeCommit(parsed.type);
     const formatted = formatDescription(parsed.description);
