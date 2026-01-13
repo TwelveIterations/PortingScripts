@@ -20,7 +20,7 @@ program
 
 const auth = program
   .command('auth')
-  .description('Manage GitHub authentication');
+  .description('manage GitHub authentication');
 
 auth
   .command('github')
@@ -39,7 +39,7 @@ auth
 
 program
   .command('unreleased')
-  .description('Fetch unreleased commits for repositories')
+  .description('find unreleased commits')
   .argument('<branch>', 'Version branch to analyze (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
@@ -49,7 +49,7 @@ program
 
 program
   .command('changelog')
-  .description('Generate changelog from commits since last version')
+  .description('generate changelog from commits')
   .argument('<repo>', 'Repository name')
   .argument('<branch>', 'Version branch to analyze (e.g., 1.20.1)')
   .option('--verbose', 'Show detailed debug logs')
@@ -57,7 +57,7 @@ program
 
 program
   .command('release')
-  .description('Trigger release workflow for a mod')
+  .description('release updates for a given version')
   .argument('<branch>', 'Version branch to release (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
@@ -69,7 +69,7 @@ program
 
 program
   .command('patch')
-  .description('Apply a patch file to repositories')
+  .description('apply a patch to selected projects')
   .argument('<patch>', 'Path to the patch file to apply')
   .requiredOption('--branch <branch>', 'Version branch to apply patch to (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
@@ -81,7 +81,7 @@ program
 
 program
   .command('copy')
-  .description('Copy a file to repositories')
+  .description('copy a file to selected projects')
   .argument('<file>', 'Path to the file to copy')
   .requiredOption('--branch <branch>', 'Version branch to copy file to (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
@@ -93,13 +93,13 @@ program
 
 program
   .command('config')
-  .description('Open configuration file in editor')
+  .description('open configuration file in editor')
   .option('--verbose', 'Show detailed debug logs')
   .action(config);
 
 program
   .command('ide')
-  .description('Open a repository in the configured IDE')
+  .description('open a project and branch in IDE')
   .argument('<repo>', 'Repository name')
   .argument('<branch>', 'Version branch')
   .option('--verbose', 'Show detailed debug logs')
@@ -107,7 +107,7 @@ program
 
 program
   .command('clone')
-  .description('Clone repositories and checkout a specific branch')
+  .description('clone repositories at a given branch')
   .argument('<branch>', 'Branch to checkout (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
