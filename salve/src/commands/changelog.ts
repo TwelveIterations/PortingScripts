@@ -4,14 +4,13 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import launchEditor from 'launch-editor';
 import type { Commit } from '../utils/changelog-utils';
-import { error, success, info, debug, promptUser } from '../utils/console';
+import { error, success, info, debug, promptUser, setVerboseMode } from '../utils/console';
 import { isVersionCommit, generateChangelog } from '../utils/changelog-utils';
 import { hasUncommittedChanges, commitChanges, addFile, pushChanges, getCommitsToPush, getGitStatus, getCommitLog } from '../utils/git-utils';
 import { findRepository } from '../utils/fuzzy-search';
 
 interface Options {
-  repo: string;
-  branch: string;
+  verbose?: boolean;
 }
 
 async function getNonChangelogChanges(repoPath: string): Promise<string[]> {
@@ -130,7 +129,9 @@ async function getLocalCommitsSinceVersion(repoPath: string): Promise<Commit[]> 
   }
 }
 
-export async function changelog(repo: string, branch: string): Promise<void> {
+export async function changelog(repo: string, branch: string, options: Options): Promise<void> {
+  setVerboseMode(options.verbose ?? false);
+  
   const config = await loadConfig();
   
   if (!config.repositoriesPath) {

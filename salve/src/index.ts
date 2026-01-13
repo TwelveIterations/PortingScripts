@@ -44,7 +44,7 @@ program
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
-  .option('--verbose', 'Show detailed progress logs')
+  .option('--verbose', 'Show detailed debug logs')
   .action(fetchUnreleasedCommits);
 
 program
@@ -52,6 +52,7 @@ program
   .description('Generate changelog from commits since last version')
   .argument('<repo>', 'Repository name')
   .argument('<branch>', 'Version branch to analyze (e.g., 1.20.1)')
+  .option('--verbose', 'Show detailed debug logs')
   .action(changelog);
 
 program
@@ -65,6 +66,7 @@ program
   .option('--loader <loader>', 'Loader to release for (defaults to all supported)')
   .option('--dry', 'Dry run - do not trigger release workflows')
   .option('--force', 'Force release, bypassing all safety checks')
+  .option('--verbose', 'Show detailed debug logs')
   .action(release);
 
 program
@@ -76,6 +78,7 @@ program
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
   .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--verbose', 'Show detailed debug logs')
   .action(patch);
 
 program
@@ -87,11 +90,13 @@ program
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
   .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--verbose', 'Show detailed debug logs')
   .action(copyFileToRepos);
 
 program
   .command('config')
   .description('Open configuration file in editor')
+  .option('--verbose', 'Show detailed debug logs')
   .action(config);
 
 program
@@ -99,6 +104,7 @@ program
   .description('Open a repository in the configured IDE')
   .argument('<repo>', 'Repository name')
   .argument('<branch>', 'Version branch')
+  .option('--verbose', 'Show detailed debug logs')
   .action(ide);
 
 program
@@ -109,6 +115,7 @@ program
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
   .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--verbose', 'Show detailed debug logs')
   .action(cloneRepos);
 
 program.parse();

@@ -1,7 +1,7 @@
 import { Octokit } from "octokit";
 import { getOctokit } from "../github";
 import { loadConfig } from "../config";
-import { error, success, debug, info, warn, promptUser } from "../utils/console";
+import { error, success, debug, info, warn, promptUser, setVerboseMode } from "../utils/console";
 import { getLastCommitMessage, hasUncommittedChanges, getCommitsToPush, getCommitLog, pullChanges, hasLocalClone, pushChanges } from "../utils/git-utils";
 import { parseCommitMessage } from "../utils/changelog-utils";
 import { existsSync, readFileSync } from "fs";
@@ -16,6 +16,7 @@ interface ReleaseOptions {
   pattern?: string;
   dry?: boolean;
   force?: boolean;
+  verbose?: boolean;
 }
 
 interface LoaderConfig {
@@ -234,6 +235,8 @@ async function resolveLoaderConfig(
 }
 
 export async function release(branch: string, options: ReleaseOptions): Promise<void> {
+  setVerboseMode(options.verbose ?? false);
+  
   try {
     const octokit = await getOctokit();
     const config = await loadConfig();

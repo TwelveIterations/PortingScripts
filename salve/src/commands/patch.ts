@@ -8,6 +8,7 @@ import {
   info,
   warn,
   promptUser,
+  setVerboseMode,
 } from "../utils/console";
 import {
   hasLocalClone,
@@ -26,6 +27,7 @@ interface PatchOptions {
   team?: string;
   pattern?: string;
   branch: string;
+  verbose?: boolean;
 }
 
 async function getRepositoriesForPatch(
@@ -116,6 +118,8 @@ async function promptForPatchApplication(
 }
 
 export async function patch(patch: string, options: PatchOptions): Promise<void> {
+  setVerboseMode(options.verbose ?? false);
+
   try {
     // Validate patch file exists
     if (!existsSync(patch)) {

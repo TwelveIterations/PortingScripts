@@ -6,7 +6,8 @@ import {
   success,
   debug,
   info,
-  warn
+  warn,
+  setVerboseMode
 } from "../utils/console";
 import {
   hasLocalClone,
@@ -23,6 +24,7 @@ interface CopyOptions {
   team?: string;
   pattern?: string;
   branch: string;
+  verbose?: boolean;
 }
 
 async function getRepositoriesForCopy(
@@ -106,6 +108,8 @@ function findProjectRoot(filePath: string): string {
 }
 
 export async function copyFileToRepos(sourcePath: string, options: CopyOptions): Promise<void> {
+  setVerboseMode(options.verbose ?? false);
+  
   try {
     // Validate source file exists
     if (!existsSync(sourcePath)) {

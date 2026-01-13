@@ -1,7 +1,14 @@
 import { Octokit } from "octokit";
 import { getOctokit } from "../github";
 import { loadConfig } from "../config";
-import { error, success, debug, info, warn } from "../utils/console";
+import {
+  error,
+  success,
+  debug,
+  info,
+  warn,
+  setVerboseMode,
+} from "../utils/console";
 import { existsSync, readdirSync, rmSync } from "fs";
 import { join } from "path";
 import { mkdir } from "fs/promises";
@@ -13,6 +20,7 @@ interface CloneOptions {
   org?: string;
   team?: string;
   pattern?: string;
+  verbose?: boolean;
 }
 
 async function getRepositoriesForClone(
@@ -72,10 +80,13 @@ async function getRepositoriesForClone(
   }
 }
 
-async function safeCleanupDirectory(targetPath: string, repoFullName: string): Promise<void> {
+async function safeCleanupDirectory(
+  targetPath: string,
+  repoFullName: string
+): Promise<void> {
   try {
     // Check if it's a git repository
-    if (existsSync(join(targetPath, '.git'))) {
+    if (existsSync(join(targetPath, ".git"))) {
       // Check for uncommitted changes
       const hasUncommitted = await hasUncommittedChanges(targetPath);
       if (hasUncommitted) {
@@ -86,7 +97,9 @@ async function safeCleanupDirectory(targetPath: string, repoFullName: string): P
       // Check for unpushed commits
       const commitsToPush = await getCommitsToPush(targetPath);
       if (commitsToPush.length > 0) {
-        warn(`Not cleaning up ${repoFullName} - has ${commitsToPush.length} unpushed commits`);
+        warn(
+          `Not cleaning up ${repoFullName} - has ${commitsToPush.length} unpushed commits`
+        );
         return;
       }
     }
@@ -95,7 +108,11 @@ async function safeCleanupDirectory(targetPath: string, repoFullName: string): P
     debug(`Cleaning up directory: ${targetPath}`);
     rmSync(targetPath, { recursive: true, force: true });
   } catch (cleanupErr) {
-    warn(`Failed to cleanup directory ${targetPath}: ${cleanupErr instanceof Error ? cleanupErr.message : 'Unknown error'}`);
+    warn(
+      `Failed to cleanup directory ${targetPath}: ${
+        cleanupErr instanceof Error ? cleanupErr.message : "Unknown error"
+      }`
+    );
   }
 }
 
@@ -115,7 +132,8 @@ async function cloneRepository(
       const gitUrl = `git@github.com:${repoFullName}.git`;
       await $`git clone ${gitUrl} ${targetPath}`;
     } catch (cloneErr) {
-      const cloneOutput = cloneErr instanceof Error ? cloneErr.message : 'Unknown error';
+      const cloneOutput =
+        cloneErr instanceof Error ? cloneErr.message : "Unknown error";
       throw new Error(`git clone failed: ${cloneOutput}`);
     }
 
@@ -124,12 +142,13 @@ async function cloneRepository(
     try {
       await $`git -C ${targetPath} checkout ${branch}`;
     } catch (checkoutErr) {
-      const checkoutOutput = checkoutErr instanceof Error ? checkoutErr.message : 'Unknown error';
-      
+      const checkoutOutput =
+        checkoutErr instanceof Error ? checkoutErr.message : "Unknown error";
+
       // Clean up the directory if checkout failed
       warn(`Checkout failed for ${repoFullName}, cleaning up directory`);
       await safeCleanupDirectory(targetPath, repoFullName);
-      
+
       throw new Error(`git checkout failed: ${checkoutOutput}`);
     }
 
@@ -147,6 +166,8 @@ export async function cloneRepos(
   branch: string,
   options: CloneOptions
 ): Promise<void> {
+  setVerboseMode(options.verbose ?? false);
+
   try {
     const octokit = await getOctokit();
     const config = await loadConfig();
@@ -202,7 +223,9 @@ export async function cloneRepos(
           // Check if the folder is empty
           const files = readdirSync(localRepoPath);
           if (files.length === 0) {
-            debug(`Repository ${repoFullName} folder exists but is empty, removing and proceeding with clone`);
+            debug(
+              `Repository ${repoFullName} folder exists but is empty, removing and proceeding with clone`
+            );
             rmSync(localRepoPath, { recursive: true });
           } else {
             if (options.repo) {
