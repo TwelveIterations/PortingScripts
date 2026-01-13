@@ -64,8 +64,6 @@ program
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
   .option('--repo <repo>', 'Repository name (defaults to all)')
   .option('--loader <loader>', 'Loader to release for (defaults to all supported)')
-  .option('--dry', 'Dry run - do not trigger release workflows')
-  .option('--force', 'Force release, bypassing all safety checks')
   .option('--verbose', 'Show detailed debug logs')
   .action(release);
 

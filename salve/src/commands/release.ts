@@ -1,8 +1,24 @@
 import { Octokit } from "octokit";
 import { getOctokit } from "../github";
 import { loadConfig } from "../config";
-import { error, success, debug, info, warn, promptUser, setVerboseMode } from "../utils/console";
-import { getLastCommitMessage, hasUncommittedChanges, getCommitsToPush, getCommitLog, pullChanges, hasLocalClone, pushChanges } from "../utils/git-utils";
+import {
+  error,
+  success,
+  debug,
+  info,
+  warn,
+  promptUser,
+  setVerboseMode,
+} from "../utils/console";
+import {
+  getLastCommitMessage,
+  hasUncommittedChanges,
+  getCommitsToPush,
+  getCommitLog,
+  pullChanges,
+  hasLocalClone,
+  pushChanges,
+} from "../utils/git-utils";
 import { parseCommitMessage } from "../utils/changelog-utils";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -14,8 +30,6 @@ interface ReleaseOptions {
   org?: string;
   team?: string;
   pattern?: string;
-  dry?: boolean;
-  force?: boolean;
   verbose?: boolean;
 }
 
@@ -25,35 +39,38 @@ interface LoaderConfig {
   forge: boolean;
 }
 
-async function getCommitsWithHashes(repoPath: string, filterMetaCommits: boolean = false): Promise<{ hash: string; message: string }[]> {
+async function getCommitsWithHashes(
+  repoPath: string,
+  filterMetaCommits: boolean = false
+): Promise<{ hash: string; message: string }[]> {
   try {
     const result = await getCommitLog(repoPath);
-    const lines = result.split('\n').filter(l => l.length > 0);
-    
+    const lines = result.split("\n").filter((l) => l.length > 0);
+
     const commits: { hash: string; message: string }[] = [];
-    
+
     for (const line of lines) {
-      const spaceIdx = line.indexOf(' ');
+      const spaceIdx = line.indexOf(" ");
       if (spaceIdx === -1) continue;
-      
+
       const hash = line.substring(0, spaceIdx);
       const message = line.substring(spaceIdx + 1);
-      
+
       // Stop at version commit
-      if (message.includes('Set version to')) {
+      if (message.includes("Set version to")) {
         break;
       }
-      
+
       if (filterMetaCommits) {
         const parsed = parseCommitMessage(message);
         if (parsed.isMetaCommit) {
           continue;
         }
       }
-      
+
       commits.push({ hash: hash.substring(0, 7), message });
     }
-    
+
     return commits;
   } catch (err) {
     return [];
@@ -67,38 +84,42 @@ async function promptForRelease(
 ): Promise<boolean> {
   const changelogPath = join(localRepoPath, "CHANGELOG.md");
   if (!existsSync(changelogPath)) {
-    error(`No CHANGELOG.md file found for ${repoFullName}. Cannot proceed with release.`);
+    error(
+      `No CHANGELOG.md file found for ${repoFullName}. Cannot proceed with release.`
+    );
     return false;
   }
-  
+
   const changelog = readFileSync(changelogPath, "utf8");
   const commitsWithHashes = await getCommitsWithHashes(localRepoPath);
-  
-  console.log()
-  console.log(chalk.underline(repoFullName))
-  console.log()
+
+  console.log();
+  console.log(chalk.underline(repoFullName));
+  console.log();
   console.log(chalk.bold(`Release Changelog:`));
   console.log(changelog);
-  
+
   console.log(chalk.bold(`Included Commits:`));
-  commitsWithHashes.forEach(commit => {
+  commitsWithHashes.forEach((commit) => {
     console.log(`> ${commit.hash} ${commit.message}`);
   });
-  console.log()
+  console.log();
 
   for (const warning of warnings) {
     warn(warning);
   }
 
   const proceed = await promptUser(
-    warnings.length > 0 ? `Release ${repoFullName} anyways?` : `Ready to release ${repoFullName}?`,
+    warnings.length > 0
+      ? `Release ${repoFullName} anyways?`
+      : `Ready to release ${repoFullName}?`,
     warnings.length === 0
   );
-  
+
   if (!proceed) {
     debug(`Skipping ${repoFullName}`);
   }
-  
+
   return proceed;
 }
 
@@ -234,9 +255,12 @@ async function resolveLoaderConfig(
   return await lookupSupportedLoaders(repoName, branch);
 }
 
-export async function release(branch: string, options: ReleaseOptions): Promise<void> {
+export async function release(
+  branch: string,
+  options: ReleaseOptions
+): Promise<void> {
   setVerboseMode(options.verbose ?? false);
-  
+
   try {
     const octokit = await getOctokit();
     const config = await loadConfig();
@@ -282,7 +306,9 @@ export async function release(branch: string, options: ReleaseOptions): Promise<
 
         // Check if repository has a local clone
         if (!(await hasLocalClone(localRepoPath))) {
-          warn(`Repository ${repoFullName} does not have a local clone at ${localRepoPath}. Skipping.`);
+          warn(
+            `Repository ${repoFullName} does not have a local clone at ${localRepoPath}. Skipping.`
+          );
           continue;
         }
 
@@ -292,69 +318,95 @@ export async function release(branch: string, options: ReleaseOptions): Promise<
           await pullChanges(localRepoPath);
           debug(`Pulled latest changes for ${repoFullName}`);
         } catch (err) {
-          error(`Failed to pull changes for ${repoFullName}: ${err instanceof Error ? err.message : 'Unknown error'}`);
-          error(`Cannot proceed with release for ${repoFullName}. Please resolve the pull issue and try again.`);
+          error(
+            `Failed to pull changes for ${repoFullName}: ${
+              err instanceof Error ? err.message : "Unknown error"
+            }`
+          );
+          error(
+            `Cannot proceed with release for ${repoFullName}. Please resolve the pull issue and try again.`
+          );
           errorCount++;
           continue;
         }
 
         if (await hasUncommittedChanges(localRepoPath)) {
-          error(`${repoFullName} has uncommitted local changes. Commit or stash them before releasing.`);
+          error(
+            `${repoFullName} has uncommitted local changes. Commit or stash them before releasing.`
+          );
           errorCount++;
           continue;
         }
 
         const unpushedCommits = await getCommitsToPush(localRepoPath);
         if (unpushedCommits.length > 0) {
-          warn(`${repoFullName} has ${unpushedCommits.length} unpushed commit(s):`);
-          unpushedCommits.forEach(commit => {
+          warn(
+            `${repoFullName} has ${unpushedCommits.length} unpushed commit(s):`
+          );
+          unpushedCommits.forEach((commit) => {
             console.log(`  ${commit}`);
           });
           console.log();
-          
-          const shouldPush = await promptUser(`Push ${unpushedCommits.length} commit(s) to remote now?`, true);
+
+          const shouldPush = await promptUser(
+            `Push ${unpushedCommits.length} commit(s) to remote now?`,
+            true
+          );
           if (shouldPush) {
             try {
               info(`Pushing commits for ${repoFullName}...`);
               await pushChanges(localRepoPath);
               success(`Successfully pushed commits for ${repoFullName}`);
             } catch (err) {
-              error(`Failed to push commits for ${repoFullName}: ${err instanceof Error ? err.message : 'Unknown error'}`);
-              error(`Cannot proceed with release for ${repoFullName}. Please resolve the push issue and try again.`);
+              error(
+                `Failed to push commits for ${repoFullName}: ${
+                  err instanceof Error ? err.message : "Unknown error"
+                }`
+              );
+              error(
+                `Cannot proceed with release for ${repoFullName}. Please resolve the push issue and try again.`
+              );
               errorCount++;
               continue;
             }
           } else {
-            warn(`Skipping release for ${repoFullName} due to unpushed commits.`);
+            warn(
+              `Skipping release for ${repoFullName} due to unpushed commits.`
+            );
             errorCount++;
             continue;
           }
         }
 
-        if (!options.force) {
-          const meaningfulCommits = await getCommitsWithHashes(localRepoPath, true);
-          if (meaningfulCommits.length === 0) {
-            // Only log an error if the repo was explicitly specified
-            if (options.repo) {
-                error(`No meaningful commits since last version commit for ${repoFullName}. Skipping.`);
-                errorCount++;
-            }
+        const meaningfulCommits = await getCommitsWithHashes(
+          localRepoPath,
+          true
+        );
+        if (meaningfulCommits.length === 0) {
+          // Only log an error if the repo was explicitly specified
+          if (options.repo) {
+            error(
+              `No meaningful commits since last version commit for ${repoFullName}. Skipping.`
+            );
+            errorCount++;
+          }
+          continue;
+        }
+
+        const lastCommit = await getLastCommitMessage(localRepoPath);
+        if (lastCommit !== "chore: Update changelog") {
+          const proceed = await promptForRelease(repoFullName, localRepoPath, [
+            `The changelog might be outdated! Last commit: ${lastCommit}`,
+          ]);
+          if (!proceed) {
+            errorCount++;
             continue;
           }
-
-          const lastCommit = await getLastCommitMessage(localRepoPath);
-          if (lastCommit !== "chore: Update changelog") {
-            const proceed = await promptForRelease(repoFullName, localRepoPath, [`The changelog might be outdated! Last commit: ${lastCommit}`]);
-            if (!proceed) {
-              errorCount++;
-              continue;
-            }
-          } else {
-            const proceed = await promptForRelease(repoFullName, localRepoPath);
-            if (!proceed) {
-              errorCount++;
-              continue;
-            }
+        } else {
+          const proceed = await promptForRelease(repoFullName, localRepoPath);
+          if (!proceed) {
+            errorCount++;
+            continue;
           }
         }
 
@@ -363,7 +415,11 @@ export async function release(branch: string, options: ReleaseOptions): Promise<
           branch,
           options.loader
         );
-        if (!loaderConfig.fabric && !loaderConfig.neoforge && !loaderConfig.forge) {
+        if (
+          !loaderConfig.fabric &&
+          !loaderConfig.neoforge &&
+          !loaderConfig.forge
+        ) {
           error(`No supported loader found for ${repoFullName}`);
           errorCount++;
           continue;
@@ -373,17 +429,7 @@ export async function release(branch: string, options: ReleaseOptions): Promise<
           `Loaders for ${repoFullName}: Fabric=${loaderConfig.fabric}, NeoForge=${loaderConfig.neoforge}, Forge=${loaderConfig.forge}`
         );
 
-        if (options.dry) {
-          info(`[DRY RUN] Would trigger workflow for ${repoFullName}...`);
-        } else {
-          await triggerWorkflow(
-            octokit,
-            owner,
-            repoName,
-            branch,
-            loaderConfig
-          );
-        }
+        await triggerWorkflow(octokit, owner, repoName, branch, loaderConfig);
         successCount++;
       } catch (err) {
         error(
@@ -396,7 +442,9 @@ export async function release(branch: string, options: ReleaseOptions): Promise<
     }
 
     if (repoFullNames.length > 1) {
-      success(`Successfully initiated release for ${successCount} repositories`);
+      success(
+        `Successfully initiated release for ${successCount} repositories`
+      );
       if (errorCount > 0) {
         error(`Failed to initiate release for ${errorCount} repositories`);
       }
