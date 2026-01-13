@@ -1,15 +1,13 @@
 import type { Octokit } from 'octokit';
-import { loadConfig, type Config } from '../config';
+import { loadConfig } from '../config';
 import { getOctokit, checkAuth } from '../github';
 import type { Commit } from '../utils/changelog-utils';
 import { isVersionCommit, parseCommitMessage } from '../utils/changelog-utils';
 import { error, success, warn, setVerboseMode, debug, renderProgressBar, clearLine } from '../utils/console';
 import chalk from 'chalk';
+import { resolveRepositories, type RepoSelectionOptions } from '../utils/repo-selection';
 
-interface Options {
-  org?: string;
-  team?: string;
-  pattern?: string;
+interface Options extends RepoSelectionOptions {
   verbose?: boolean;
 }
 
@@ -19,57 +17,6 @@ async function ensureAuth(): Promise<void> {
   if (!isAuthenticated) {
     error('Not authenticated with GitHub.');
     error('Run: salve auth github');
-    process.exit(1);
-  }
-}
-
-async function getTeamRepositories(
-  octokit: Octokit,
-  org: string,
-  team: string | undefined,
-  pattern: string | undefined,
-  excludedRepositories: string[]
-): Promise<string[]> {
-  debug(`Fetching repositories for organization: ${org}`);
-
-  try {
-    let repos: { full_name: string }[];
-    
-    if (team) {
-      debug(`Filtering by team: ${team}`);
-      repos = await octokit.paginate(octokit.rest.teams.listReposInOrg, {
-        org,
-        team_slug: team,
-        per_page: 100,
-      });
-    } else {
-      repos = await octokit.paginate(octokit.rest.repos.listForOrg, {
-        org,
-        per_page: 100,
-      });
-    }
-
-    let repoNames = repos.map((r) => r.full_name);
-
-    if (excludedRepositories.length > 0) {
-      const excluded = new Set(excludedRepositories);
-      const beforeCount = repoNames.length;
-      repoNames = repoNames.filter((name) => !excluded.has(name));
-      const excludedCount = beforeCount - repoNames.length;
-      if (excludedCount > 0) {
-        debug(`Excluded ${excludedCount} repositories from config`);
-      }
-    }
-
-    if (pattern) {
-      debug(`Filtering repositories by pattern: ${pattern}`);
-      const regex = new RegExp(pattern);
-      repoNames = repoNames.filter((name) => regex.test(name));
-    }
-
-    return repoNames;
-  } catch (err) {
-    error(`Failed to fetch repositories for ${team ? `team '${team}' in ` : ''}organization '${org}'`);
     process.exit(1);
   }
 }
@@ -155,31 +102,10 @@ export async function fetchUnreleasedCommits(branch: string, options: Options): 
   await ensureAuth();
   const octokit = await getOctokit();
 
-  const config = await loadConfig();
-  
-  // Use organization from command line or config
-  const organization = options.org || config.organization;
-  if (!organization) {
-    error('Organization must be specified either via --org option or in salve.config.json');
-    process.exit(1);
-  }
-  
-  // Use team from command line or config
-  const team = options.team || config.team;
-
   debug('Starting unreleased commits analysis');
-  debug(`Organization: ${organization}`);
   debug(`Branch: ${branch}`);
-  if (team) debug(`Team: ${team}`);
-  if (options.pattern) debug(`Repository pattern: ${options.pattern}`);
 
-  const repositories = await getTeamRepositories(
-    octokit,
-    organization,
-    team,
-    options.pattern,
-    config.excludedRepositories
-  );
+  const repositories = await resolveRepositories(octokit, options);
 
   if (repositories.length === 0) {
     error('No repositories found');

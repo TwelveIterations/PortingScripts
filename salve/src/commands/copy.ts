@@ -1,4 +1,3 @@
-import { Octokit } from "octokit";
 import { getOctokit } from "../github";
 import { loadConfig } from "../config";
 import {
@@ -17,71 +16,11 @@ import {
 import { existsSync, statSync } from "fs";
 import { join, relative, resolve } from "path";
 import { copyFile, mkdir } from "fs/promises";
+import { resolveRepositories, type RepoSelectionOptions } from "../utils/repo-selection";
 
-interface CopyOptions {
-  repo?: string;
-  org?: string;
-  team?: string;
-  pattern?: string;
+interface CopyOptions extends RepoSelectionOptions {
   branch: string;
   verbose?: boolean;
-}
-
-async function getRepositoriesForCopy(
-  octokit: Octokit,
-  organization: string,
-  team?: string,
-  pattern?: string
-): Promise<string[]> {
-  try {
-    let repos: { full_name: string }[];
-
-    if (team) {
-      debug(
-        `Fetching repositories for team: ${team} in organization: ${organization}`
-      );
-      repos = await octokit.paginate(octokit.rest.teams.listReposInOrg, {
-        org: organization,
-        team_slug: team,
-        per_page: 100,
-      });
-    } else {
-      debug(`Fetching repositories for organization: ${organization}`);
-      repos = await octokit.paginate(octokit.rest.repos.listForOrg, {
-        org: organization,
-        per_page: 100,
-      });
-    }
-
-    let repoNames = repos.map((r) => r.full_name);
-
-    // Load config for excluded repositories
-    const config = await loadConfig();
-    if (config.excludedRepositories.length > 0) {
-      const excluded = new Set(config.excludedRepositories);
-      const beforeCount = repoNames.length;
-      repoNames = repoNames.filter((name) => !excluded.has(name));
-      const excludedCount = beforeCount - repoNames.length;
-      if (excludedCount > 0) {
-        debug(`Excluded ${excludedCount} repositories from config`);
-      }
-    }
-
-    if (pattern) {
-      debug(`Filtering repositories by pattern: ${pattern}`);
-      const regex = new RegExp(pattern);
-      repoNames = repoNames.filter((name) => regex.test(name));
-    }
-
-    return repoNames;
-  } catch (err) {
-    error(
-      `Failed to fetch repositories for ${
-        team ? `team '${team}' in ` : ""
-      }organization '${organization}'`
-    );
-    process.exit(1);
-  }
 }
 
 function findProjectRoot(filePath: string): string {
@@ -127,34 +66,13 @@ export async function copyFileToRepos(sourcePath: string, options: CopyOptions):
     const octokit = await getOctokit();
     const config = await loadConfig();
 
-    const organization = options.org || config.organization;
-    if (!organization) {
-      error(
-        "Organization not specified. Use --org or set it in salve.config.json"
-      );
-      process.exit(1);
-    }
-
-    const team = options.team || config.team;
-
     // Find project root and relativize the path
     const projectRoot = findProjectRoot(sourcePath);
     const relativeSourcePath = relative(projectRoot, sourcePath);
     debug(`Project root: ${projectRoot}`);
     debug(`Relative source path: ${relativeSourcePath}`);
 
-    let repoFullNames: string[];
-    if (!options.repo) {
-      repoFullNames = await getRepositoriesForCopy(
-        octokit,
-        organization,
-        team,
-        options.pattern
-      );
-      debug(`Found ${repoFullNames.length} repositories to process`);
-    } else {
-      repoFullNames = [`${organization}/${options.repo}`];
-    }
+    const repoFullNames = await resolveRepositories(octokit, options);
 
     let successCount = 0;
     let errorCount = 0;
