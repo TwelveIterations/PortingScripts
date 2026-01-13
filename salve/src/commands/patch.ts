@@ -21,7 +21,6 @@ import chalk from "chalk";
 import launchEditor from "launch-editor";
 
 interface PatchOptions {
-  patch: string;
   repo?: string;
   org?: string;
   team?: string;
@@ -116,11 +115,11 @@ async function promptForPatchApplication(
   return proceed;
 }
 
-export async function patch(options: PatchOptions): Promise<void> {
+export async function patch(patch: string, options: PatchOptions): Promise<void> {
   try {
     // Validate patch file exists
-    if (!existsSync(options.patch)) {
-      error(`Patch file not found: ${options.patch}`);
+    if (!existsSync(patch)) {
+      error(`Patch file not found: ${patch}`);
       process.exit(1);
     }
 
@@ -206,7 +205,7 @@ export async function patch(options: PatchOptions): Promise<void> {
         }
 
         // Apply the patch
-        const patchResult = await applyPatch(localRepoPath, options.patch);
+        const patchResult = await applyPatch(localRepoPath, patch);
 
         if (patchResult.success) {
           success(`Patch applied successfully to ${repoFullName}`);

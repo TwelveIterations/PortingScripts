@@ -126,7 +126,7 @@ async function getLocalCommitsSinceVersion(repoPath: string): Promise<Commit[]> 
   }
 }
 
-export async function changelog(options: Options): Promise<void> {
+export async function changelog(repo: string, branch: string): Promise<void> {
   const config = await loadConfig();
   
   if (!config.repositoriesPath) {
@@ -134,7 +134,7 @@ export async function changelog(options: Options): Promise<void> {
     process.exit(1);
   }
   
-  const repoPath = join(config.repositoriesPath, options.branch, options.repo);
+  const repoPath = join(config.repositoriesPath, branch, repo);
   if (!existsSync(repoPath)) {
     error(`Repository not found at: ${repoPath}`);
     process.exit(1);

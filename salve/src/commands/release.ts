@@ -16,7 +16,6 @@ interface ReleaseOptions {
   pattern?: string;
   dry?: boolean;
   force?: boolean;
-  branch: string;
 }
 
 interface LoaderConfig {
@@ -234,7 +233,7 @@ async function resolveLoaderConfig(
   return await lookupSupportedLoaders(repoName, branch);
 }
 
-export async function release(options: ReleaseOptions): Promise<void> {
+export async function release(branch: string, options: ReleaseOptions): Promise<void> {
   try {
     const octokit = await getOctokit();
     const config = await loadConfig();
@@ -276,7 +275,7 @@ export async function release(options: ReleaseOptions): Promise<void> {
           continue;
         }
 
-        const localRepoPath = join(config.repositoriesPath!, options.branch, repoName);
+        const localRepoPath = join(config.repositoriesPath!, branch, repoName);
 
         // Check if repository has a local clone
         if (!(await hasLocalClone(localRepoPath))) {
@@ -338,7 +337,7 @@ export async function release(options: ReleaseOptions): Promise<void> {
 
         const loaderConfig = await resolveLoaderConfig(
           repoName,
-          options.branch,
+          branch,
           options.loader
         );
         if (!loaderConfig.fabric && !loaderConfig.neoforge && !loaderConfig.forge) {
@@ -358,7 +357,7 @@ export async function release(options: ReleaseOptions): Promise<void> {
             octokit,
             owner,
             repoName,
-            options.branch,
+            branch,
             loaderConfig
           );
         }

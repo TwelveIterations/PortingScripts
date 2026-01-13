@@ -50,14 +50,14 @@ program
 program
   .command('changelog')
   .description('Generate changelog from commits since last version')
-  .requiredOption('--repo <repo>', 'Repository name (folder name in repositoriesPath)')
-  .requiredOption('--branch <branch>', 'Version branch to analyze (e.g., 1.20.1)')
+  .argument('<repo>', 'Repository name')
+  .argument('<branch>', 'Version branch to analyze (e.g., 1.20.1)')
   .action(changelog);
 
 program
   .command('release')
   .description('Trigger release workflow for a mod')
-  .requiredOption('--branch <branch>', 'Version branch to release (e.g., 1.20.1)')
+  .argument('<branch>', 'Version branch to release (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
@@ -70,7 +70,7 @@ program
 program
   .command('patch')
   .description('Apply a patch file to repositories')
-  .requiredOption('--patch <patch>', 'Path to the patch file to apply')
+  .argument('<patch>', 'Path to the patch file to apply')
   .requiredOption('--branch <branch>', 'Version branch to apply patch to (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
