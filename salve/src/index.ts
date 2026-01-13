@@ -10,6 +10,7 @@ import { copyFileToRepos } from './commands/copy';
 import { config } from './commands/config';
 import { ide } from './commands/ide';
 import { cloneRepos } from './commands/clone';
+import { pullRepos } from './commands/pull';
 
 const program = new Command();
 
@@ -115,5 +116,16 @@ program
   .option('--repo <repo>', 'Repository name (defaults to all)')
   .option('--verbose', 'Show detailed debug logs')
   .action(cloneRepos);
+
+program
+  .command('pull')
+  .description('pull changes for repositories at a given branch')
+  .argument('<branch>', 'Branch to pull changes for (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--verbose', 'Show detailed debug logs')
+  .action(pullRepos);
 
 program.parse();
