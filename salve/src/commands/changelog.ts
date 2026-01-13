@@ -174,24 +174,27 @@ export async function changelog(repo: string, branch: string): Promise<void> {
     const lines = changelogContent.split('\n');
     const filteredLines = lines.filter(line => !line.startsWith('>'));
     changelogContent = filteredLines.join('\n');
-    info('Pending Changelog:');
-    console.log(changelogContent);
     
-    const shouldCommit = await promptUser('Do you want to commit the changelog changes?');
-    if (shouldCommit) {
-      await commitChangelogOnly(repoPath, 'chore: Update changelog');
-      success('Changelog committed');
+    if (changelogContent.trim().length) {
+      info('Pending Changelog:');
+      console.log(changelogContent);
       
-      if (await shouldAutoPushChangelog(repoPath)) {
-        try {
-          await pushChanges(repoPath);
-          success('Changelog pushed to remote');
-        } catch (err) {
-          error('Failed to push changelog');
+      const shouldCommit = await promptUser('Do you want to commit the changelog changes?');
+      if (shouldCommit) {
+        await commitChangelogOnly(repoPath, 'chore: Update changelog');
+        success('Changelog committed');
+        
+        if (await shouldAutoPushChangelog(repoPath)) {
+          try {
+            await pushChanges(repoPath);
+            success('Changelog pushed to remote');
+          } catch (err) {
+            error('Failed to push changelog');
+          }
         }
+        
+        process.exit(1);
       }
-      
-      process.exit(1);
     }
   }
   
