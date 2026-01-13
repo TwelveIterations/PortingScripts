@@ -5,6 +5,7 @@ import { fetchUnreleasedCommits } from './commands/fetch-unreleased-commits';
 import { authGitHub, authStatus, authLogout } from './commands/auth';
 import { changelog } from './commands/changelog';
 import { release } from './commands/release';
+import { patch } from './commands/patch';
 import { config } from './commands/config';
 
 const program = new Command();
@@ -64,6 +65,17 @@ program
   .option('--dry', 'Dry run - do not trigger release workflows')
   .option('--force', 'Force release, bypassing all safety checks')
   .action(release);
+
+program
+  .command('patch')
+  .description('Apply a patch file to repositories')
+  .requiredOption('--patch <patch>', 'Path to the patch file to apply')
+  .requiredOption('--branch <branch>', 'Version branch to apply patch to (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .action(patch);
 
 program
   .command('config')

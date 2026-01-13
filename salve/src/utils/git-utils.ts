@@ -110,3 +110,22 @@ export async function hasLocalClone(repoPath: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function applyPatch(repoPath: string, patchFilePath: string): Promise<{ success: boolean; output: string; error: string }> {
+  try {
+    const result = await $`git -C ${repoPath} apply --check ${patchFilePath}`.quiet();
+    return { success: true, output: 'Patch applies cleanly', error: '' };
+  } catch (checkError) {
+    try {
+      // Try to apply with 3-way merge
+      const result = await $`git -C ${repoPath} apply --3way ${patchFilePath}`.text();
+      return { success: true, output: result, error: '' };
+    } catch (applyError) {
+      return { 
+        success: false, 
+        output: '', 
+        error: `Patch does not apply cleanly: ${applyError instanceof Error ? applyError.message : 'Unknown error'}` 
+      };
+    }
+  }
+}
