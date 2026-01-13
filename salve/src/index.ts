@@ -84,7 +84,7 @@ program
   .command('copy')
   .description('copy a file to selected projects')
   .argument('<file>', 'Path to the file to copy')
-  .requiredOption('--branch <branch>', 'Version branch to copy file to (e.g., 1.20.1)')
+  .argument('<branch>', 'Version branch to copy file to (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')

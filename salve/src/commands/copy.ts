@@ -19,7 +19,6 @@ import { copyFile, mkdir } from "fs/promises";
 import { resolveRepositories, type RepoSelectionOptions } from "../utils/repo-selection";
 
 interface CopyOptions extends RepoSelectionOptions {
-  branch: string;
   verbose?: boolean;
 }
 
@@ -46,7 +45,7 @@ function findProjectRoot(filePath: string): string {
   return resolve(filePath, "..");
 }
 
-export async function copyFileToRepos(sourcePath: string, options: CopyOptions): Promise<void> {
+export async function copyFileToRepos(sourcePath: string, branch: string, options: CopyOptions): Promise<void> {
   setVerboseMode(options.verbose ?? false);
   
   try {
@@ -91,7 +90,7 @@ export async function copyFileToRepos(sourcePath: string, options: CopyOptions):
 
         const localRepoPath = join(
           config.repositoriesPath!,
-          options.branch,
+          branch,
           repoName
         );
 
