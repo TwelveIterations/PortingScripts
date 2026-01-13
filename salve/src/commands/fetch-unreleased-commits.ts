@@ -10,7 +10,6 @@ interface Options {
   org?: string;
   team?: string;
   pattern?: string;
-  maxRepos: string;
   json?: boolean;
   verbose?: boolean;
 }
@@ -30,7 +29,6 @@ async function getTeamRepositories(
   org: string,
   team: string | undefined,
   pattern: string | undefined,
-  maxRepos: number,
   excludedRepositories: string[]
 ): Promise<string[]> {
   debug(`Fetching repositories for organization: ${org}`);
@@ -68,11 +66,6 @@ async function getTeamRepositories(
       debug(`Filtering repositories by pattern: ${pattern}`);
       const regex = new RegExp(pattern);
       repoNames = repoNames.filter((name) => regex.test(name));
-    }
-
-    if (repoNames.length > maxRepos) {
-      warn(`Limiting to first ${maxRepos} repositories (found ${repoNames.length})`);
-      repoNames = repoNames.slice(0, maxRepos);
     }
 
     return repoNames;
@@ -181,13 +174,11 @@ export async function fetchUnreleasedCommits(branch: string, options: Options): 
   if (team) debug(`Team: ${team}`);
   if (options.pattern) debug(`Repository pattern: ${options.pattern}`);
 
-  const maxRepos = parseInt(options.maxRepos, 10);
   const repositories = await getTeamRepositories(
     octokit,
     organization,
     team,
     options.pattern,
-    maxRepos,
     config.excludedRepositories
   );
 

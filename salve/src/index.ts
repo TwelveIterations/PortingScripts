@@ -44,7 +44,6 @@ program
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')
-  .option('--max-repos <num>', 'Maximum repositories to process', '100')
   .option('--json', 'Output results in JSON format')
   .option('--verbose', 'Show detailed progress logs')
   .action(fetchUnreleasedCommits);
