@@ -9,6 +9,7 @@ import { patch } from './commands/patch';
 import { copyFileToRepos } from './commands/copy';
 import { config } from './commands/config';
 import { ide } from './commands/ide';
+import { cloneRepos } from './commands/clone';
 
 const program = new Command();
 
@@ -101,5 +102,15 @@ program
   .argument('<repo>', 'Repository name')
   .argument('<branch>', 'Version branch')
   .action(ide);
+
+program
+  .command('clone')
+  .description('Clone repositories and checkout a specific branch')
+  .argument('<branch>', 'Branch to checkout (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .action(cloneRepos);
 
 program.parse();
