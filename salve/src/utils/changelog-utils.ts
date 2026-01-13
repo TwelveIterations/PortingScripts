@@ -13,6 +13,11 @@ interface GroupedChanges {
 export function parseCommitMessage(message: string): { type: string; description: string; isMetaCommit: boolean } {
   const metaPrefixes = ['build', 'ci', 'chore'];
   
+  // Check for merge commits (meta commits)
+  if (message.startsWith('Merge branch ')) {
+    return { type: 'merge', description: message, isMetaCommit: true };
+  }
+  
   // Check for conventional commit format: type(scope): description or type: description
   const conventionalMatch = message.match(/^(\w+)(?:\([^)]*\))?:\s*(.+)$/);
   
