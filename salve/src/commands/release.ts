@@ -2,7 +2,7 @@ import { Octokit } from "octokit";
 import { getOctokit } from "../github";
 import { loadConfig } from "../config";
 import { error, success, debug, info, warn, promptUser } from "../utils/console";
-import { getLastCommitMessage, getCommitsSinceVersionTag, hasUncommittedChanges, getCommitsToPush, getCommitLog, pullChanges, hasLocalClone } from "../utils/git-utils";
+import { getLastCommitMessage, hasUncommittedChanges, getCommitsToPush, getCommitLog, pullChanges, hasLocalClone, pushChanges } from "../utils/git-utils";
 import { parseCommitMessage } from "../utils/changelog-utils";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -303,9 +303,29 @@ export async function release(branch: string, options: ReleaseOptions): Promise<
 
         const unpushedCommits = await getCommitsToPush(localRepoPath);
         if (unpushedCommits.length > 0) {
-          error(`${repoFullName} has ${unpushedCommits.length} unpushed commit(s). Push them before releasing.`);
-          errorCount++;
-          continue;
+          warn(`${repoFullName} has ${unpushedCommits.length} unpushed commit(s):`);
+          unpushedCommits.forEach(commit => {
+            console.log(`  ${commit}`);
+          });
+          console.log();
+          
+          const shouldPush = await promptUser(`Push ${unpushedCommits.length} commit(s) to remote now?`, true);
+          if (shouldPush) {
+            try {
+              info(`Pushing commits for ${repoFullName}...`);
+              await pushChanges(localRepoPath);
+              success(`Successfully pushed commits for ${repoFullName}`);
+            } catch (err) {
+              error(`Failed to push commits for ${repoFullName}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+              error(`Cannot proceed with release for ${repoFullName}. Please resolve the push issue and try again.`);
+              errorCount++;
+              continue;
+            }
+          } else {
+            warn(`Skipping release for ${repoFullName} due to unpushed commits.`);
+            errorCount++;
+            continue;
+          }
         }
 
         if (!options.force) {
