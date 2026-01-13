@@ -7,7 +7,6 @@ import { error, success, warn, setVerboseMode, debug, renderProgressBar, clearLi
 import chalk from 'chalk';
 
 interface Options {
-  branch: string;
   org?: string;
   team?: string;
   pattern?: string;
@@ -158,7 +157,7 @@ async function getUnreleasedCommits(octokit: Octokit, repo: string, branch: stri
   }
 }
 
-export async function fetchUnreleasedCommits(options: Options): Promise<void> {
+export async function fetchUnreleasedCommits(branch: string, options: Options): Promise<void> {
   setVerboseMode(options.verbose ?? false);
   
   await ensureAuth();
@@ -178,7 +177,7 @@ export async function fetchUnreleasedCommits(options: Options): Promise<void> {
 
   debug('Starting unreleased commits analysis');
   debug(`Organization: ${organization}`);
-  debug(`Branch: ${options.branch}`);
+  debug(`Branch: ${branch}`);
   if (team) debug(`Team: ${team}`);
   if (options.pattern) debug(`Repository pattern: ${options.pattern}`);
 
@@ -212,7 +211,7 @@ export async function fetchUnreleasedCommits(options: Options): Promise<void> {
       process.stdout.write(`${renderProgressBar(i + 1, repositories.length)} Analyzing ${repo}...`);
     }
     
-    const commits = await getUnreleasedCommits(octokit, repo, options.branch);
+    const commits = await getUnreleasedCommits(octokit, repo, branch);
 
     if (commits.length > 0) {
       results[repo] = commits;
