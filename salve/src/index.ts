@@ -72,7 +72,7 @@ program
   .command('patch')
   .description('apply a patch to selected projects')
   .argument('<patch>', 'Path to the patch file to apply')
-  .requiredOption('--branch <branch>', 'Version branch to apply patch to (e.g., 1.20.1)')
+  .argument('<branch>', 'Version branch to apply patch to (e.g., 1.20.1)')
   .option('--org <organization>', 'GitHub organization name')
   .option('--team <team>', 'Team name to filter repositories')
   .option('--pattern <pattern>', 'Repository name pattern (regex)')

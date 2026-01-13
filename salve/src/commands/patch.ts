@@ -17,46 +17,14 @@ import {
 } from "../utils/git-utils";
 import { existsSync } from "fs";
 import { join } from "path";
-import chalk from "chalk";
 import launchEditor from "launch-editor";
 import { resolveRepositories, type RepoSelectionOptions } from "../utils/repo-selection";
 
 interface PatchOptions extends RepoSelectionOptions {
-  branch: string;
   verbose?: boolean;
 }
 
-async function promptForPatchApplication(
-  repoFullName: string,
-  localRepoPath: string,
-  patchFilePath: string,
-  warnings: string[] = []
-): Promise<boolean> {
-  console.log();
-  console.log(chalk.underline(repoFullName));
-  console.log();
-  console.log(chalk.bold(`Patch file:`));
-  console.log(patchFilePath);
-
-  for (const warning of warnings) {
-    warn(warning);
-  }
-
-  const proceed = await promptUser(
-    warnings.length > 0
-      ? `Apply patch to ${repoFullName} anyways?`
-      : `Apply patch to ${repoFullName}?`,
-    false
-  );
-
-  if (!proceed) {
-    debug(`Skipping ${repoFullName}`);
-  }
-
-  return proceed;
-}
-
-export async function patch(patch: string, options: PatchOptions): Promise<void> {
+export async function patch(patch: string, branch: string, options: PatchOptions): Promise<void> {
   setVerboseMode(options.verbose ?? false);
 
   try {
@@ -88,7 +56,7 @@ export async function patch(patch: string, options: PatchOptions): Promise<void>
 
         const localRepoPath = join(
           config.repositoriesPath!,
-          options.branch,
+          branch,
           repoName
         );
 
