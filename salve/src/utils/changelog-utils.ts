@@ -65,8 +65,8 @@ export function categorizeCommit(type: string): keyof GroupedChanges {
 
 export function stripIssueSuffixes(description: string): string {
   // Remove patterns like (#123) or #123 from the end of the description
-  // Only match complete patterns at the end, with optional trailing whitespace
-  return description.replace(/\s*(?:\(#\d+\)|#\d+)\s*$/, '').trim();
+  // Match multiple issue suffixes at the end, with optional trailing whitespace
+  return description.replace(/(?:\s*(?:\(#\d+\)|#\d+))+\s*$/, '').trim();
 }
 
 export function formatDescription(description: string): string {

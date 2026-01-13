@@ -72,6 +72,13 @@ describe('stripIssueSuffixes', () => {
     expect(stripIssueSuffixes('Add new feature (#123')).toBe('Add new feature ('); // Incomplete pattern stripped
     expect(stripIssueSuffixes('Add new feature #123)')).toBe('Add new feature #123)'); // Mismatched parentheses
   });
+
+  it('should strip multiple issue suffixes', () => {
+    expect(stripIssueSuffixes('Add new feature (#123) #456')).toBe('Add new feature');
+    expect(stripIssueSuffixes('Fix critical bug (#789) (#1011)')).toBe('Fix critical bug');
+    expect(stripIssueSuffixes('Update component #123 #456 #789')).toBe('Update component');
+    expect(stripIssueSuffixes('Remove deprecated code (#123)  #456  ')).toBe('Remove deprecated code');
+  });
 });
 
 describe('generateChangelog', () => {
