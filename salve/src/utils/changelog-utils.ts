@@ -11,7 +11,7 @@ interface GroupedChanges {
 }
 
 export function parseCommitMessage(message: string): { type: string; description: string; isMetaCommit: boolean } {
-  const metaPrefixes = ['build', 'ci', 'chore'];
+  const metaPrefixes = ['build', 'ci', 'chore', 'docs'];
   
   // Check for merge commits (meta commits)
   if (message.startsWith('Merge branch ')) {
