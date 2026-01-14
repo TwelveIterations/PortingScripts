@@ -4,8 +4,8 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import launchEditor from 'launch-editor';
 import type { Commit } from '../utils/changelog-utils';
-import { error, success, info, debug, promptUser, setVerboseMode } from '../utils/console';
-import { isVersionCommit, generateChangelog } from '../utils/changelog-utils';
+import { error, success, info, warn, debug, promptUser, setVerboseMode } from '../utils/console';
+import { isVersionCommit, isChangelogCommit, generateChangelog } from '../utils/changelog-utils';
 import { hasUncommittedChanges, commitChanges, addFile, pushChanges, getCommitsToPush, getGitStatus, getCommitLog } from '../utils/git-utils';
 import { findRepository } from '../utils/fuzzy-search';
 
@@ -120,6 +120,15 @@ async function getLocalCommitsSinceVersion(repoPath: string): Promise<Commit[]> 
   }
 }
 
+async function hasUnreleasedChangelogCommit(repoPath: string): Promise<boolean> {
+  try {
+    const commits = await getLocalCommitsSinceVersion(repoPath);
+    return commits.some(commit => isChangelogCommit(commit.message));
+  } catch (err) {
+    return false;
+  }
+}
+
 export async function changelog(repo: string, branch: string, options: Options): Promise<void> {
   setVerboseMode(options.verbose ?? false);
   
@@ -201,6 +210,33 @@ export async function changelog(repo: string, branch: string, options: Options):
   if (commits.length === 0) {
     info('No pending commits found.');
     return;
+  }
+  
+  // Check if there's already a changelog commit in the unreleased commits
+  const hasChangelogCommit = await hasUnreleasedChangelogCommit(repoPath);
+  if (hasChangelogCommit) {
+    warn('A changelog commit already exists.');
+    
+    // Show current changelog if it exists
+    if (existsSync(changelogPath)) {
+      const changelogContent = await Bun.file(changelogPath).text();
+      info('Current changelog:');
+      console.log(changelogContent);
+    }
+    
+    // Show the commits that are included in this changelog
+    const includedCommits = await getLocalCommitsSinceVersion(repoPath);
+    if (includedCommits.length > 0) {
+      info(`Commits included in changelog:`);
+      includedCommits.forEach((commit: Commit) => {
+        console.log(`  ${chalk.gray(commit.hash)} ${commit.message}`);
+      });
+    }
+    
+    const shouldEdit = await promptUser('Do you want to edit the changelog anyway?', false);
+    if (!shouldEdit) {
+      return;
+    }
   }
   
   info(`Found ${chalk.green(commits.length)} commits since last version.`);

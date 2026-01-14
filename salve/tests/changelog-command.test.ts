@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { prepareChangelogForEdit } from '../src/commands/changelog';
-import { existsSync } from 'fs';
 import { join } from 'path';
 import type { Commit } from '../src/utils/changelog-utils';
 
