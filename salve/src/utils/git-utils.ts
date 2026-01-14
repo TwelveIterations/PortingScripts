@@ -129,3 +129,37 @@ export async function applyPatch(repoPath: string, patchFilePath: string): Promi
     }
   }
 }
+
+export async function getCurrentBranch(repoPath: string): Promise<string> {
+  try {
+    const result = await $`git -C ${repoPath} branch --show-current`.text();
+    return result.trim();
+  } catch (err) {
+    throw new Error(`Failed to get current branch: ${err}`);
+  }
+}
+
+export async function checkoutBranch(repoPath: string, branchName: string): Promise<void> {
+  try {
+    await $`git -C ${repoPath} checkout ${branchName}`.quiet();
+  } catch (err) {
+    throw new Error(`Failed to checkout branch ${branchName}: ${err}`);
+  }
+}
+
+export async function createAndCheckoutBranch(repoPath: string, branchName: string): Promise<void> {
+  try {
+    await $`git -C ${repoPath} checkout -b ${branchName}`.quiet();
+  } catch (err) {
+    throw new Error(`Failed to create and checkout branch ${branchName}: ${err}`);
+  }
+}
+
+export async function hasUnpushedChanges(repoPath: string): Promise<boolean> {
+  try {
+    const result = await $`git -C ${repoPath} log @{u}..HEAD --oneline`.text();
+    return result.trim().length > 0;
+  } catch (err) {
+    return false;
+  }
+}

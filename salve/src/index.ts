@@ -11,6 +11,7 @@ import { config } from './commands/config';
 import { ide } from './commands/ide';
 import { cloneRepos } from './commands/clone';
 import { pullRepos } from './commands/pull';
+import { dev } from './commands/dev';
 
 const program = new Command();
 
@@ -127,5 +128,15 @@ program
   .option('--repo <repo>', 'Repository name (defaults to all)')
   .option('--verbose', 'Show detailed debug logs')
   .action(pullRepos);
+
+program
+  .command('dev')
+  .description('start development on an issue')
+  .argument('<repo>', 'Repository name')
+  .argument('<issue>', 'Issue number')
+  .option('--branch <branch>', 'Branch to checkout (e.g., 1.20.1), inferred from issue if not specified')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--verbose', 'Show detailed debug logs')
+  .action(dev);
 
 program.parse();
