@@ -14,7 +14,7 @@ export function parseCommitMessage(message: string): { type: string; description
   const metaPrefixes = ['build', 'ci', 'chore', 'docs'];
   
   // Check for merge commits (meta commits)
-  if (message.startsWith('Merge branch ')) {
+  if (message.startsWith('Merge branch ') || message.startsWith('Merge remote-tracking branch ')) {
     return { type: 'merge', description: message, isMetaCommit: true };
   }
   
