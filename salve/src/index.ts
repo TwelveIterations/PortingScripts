@@ -13,6 +13,7 @@ import { cloneRepos } from './commands/clone';
 import { pullRepos } from './commands/pull';
 import { dev } from './commands/dev';
 import { status } from './commands/status';
+import { push } from './commands/push';
 
 const program = new Command();
 
@@ -150,5 +151,13 @@ program
   .option('--repo <repo>', 'Repository name (defaults to all)')
   .option('--verbose', 'Show detailed debug logs')
   .action(status);
+
+program
+  .command('push')
+  .description('push commits for a repository and branch')
+  .argument('<repo>', 'Repository name')
+  .argument('<branch>', 'Version branch (e.g., 1.20.1)')
+  .option('--verbose', 'Show detailed debug logs')
+  .action(push);
 
 program.parse();
