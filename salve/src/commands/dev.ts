@@ -18,6 +18,7 @@ import {
   getCurrentBranch,
   checkoutBranch,
   createAndCheckoutBranch,
+  pullChanges,
 } from "../utils/git-utils";
 import { getOctokit } from "../github";
 
@@ -257,6 +258,16 @@ export async function dev(
       info(`Checking out version branch: ${chalk.cyan(targetBranch)}`);
       await checkoutBranch(repoPath, targetBranch);
       success(`Checked out to ${targetBranch}`);
+    }
+
+    // Pull latest changes before creating new branch
+    info(`Pulling latest changes from ${chalk.cyan(targetBranch)}...`);
+    try {
+      await pullChanges(repoPath);
+      success(`Pulled latest changes`);
+    } catch (err) {
+      warn(`Failed to pull changes: ${err}`);
+      warn(`Continuing with branch creation...`);
     }
 
     // Create and checkout the new feature/fix branch
