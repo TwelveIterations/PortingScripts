@@ -142,7 +142,6 @@ export async function dev(
         const found = findRepository(repo, branch, config.repositoriesPath);
         if (found) {
           matchedRepo = found;
-          targetBranch = branch;
           break;
         }
       }
