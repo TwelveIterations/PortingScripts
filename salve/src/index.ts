@@ -12,6 +12,7 @@ import { ide } from './commands/ide';
 import { cloneRepos } from './commands/clone';
 import { pullRepos } from './commands/pull';
 import { dev } from './commands/dev';
+import { status } from './commands/status';
 
 const program = new Command();
 
@@ -138,5 +139,16 @@ program
   .option('--org <organization>', 'GitHub organization name')
   .option('--verbose', 'Show detailed debug logs')
   .action(dev);
+
+program
+  .command('status')
+  .description('check CI build status for repositories')
+  .argument('<branch>', 'Version branch to check (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--verbose', 'Show detailed debug logs')
+  .action(status);
 
 program.parse();
