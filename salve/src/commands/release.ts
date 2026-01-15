@@ -303,13 +303,14 @@ export async function release(
         );
         if (meaningfulCommits.length === 0) {
           // Only log an error if the repo was explicitly specified
-          if (options.repo) {
-            error(
-              `No meaningful commits since last version commit for ${repoFullName}. Skipping.`
-            );
+          if (!options.repo) {
             errorCount++;
+            continue;
+          } else {
+            warn(
+              `No meaningful commits since last version commit for ${repoFullName}.`
+            );
           }
-          continue;
         }
 
         const lastCommit = await getLastCommitMessage(localRepoPath);
