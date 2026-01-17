@@ -4,7 +4,7 @@ import { type VersionInfo, type VersionInfoAdapter } from ".";
 import { fetchJson, fetchText } from "./fetch";
 
 export const FabricAdapterConfigSchema = z.object({
-    source: z.url().default("https://maven.fabricmc.net/jdlist.txt"),
+    source: z.url().default("https://maven.fabricmc.net/jdlist.txt").optional(),
     artifact: z.string(),
 });
 export type FabricAdapterConfig = z.infer<typeof FabricAdapterConfigSchema>;
@@ -24,10 +24,11 @@ function buildGitHubReleaseUrl(version: string): string {
  * @param config - Adapter configuration describing the Fabric feed; `source` is the URL to fetch the list from and `artifact` is the artifact name used as the prefix to identify versions
  * @returns A VersionInfoAdapter whose `getLatestVersion` method returns the latest matching version info (an object with `version`, `stage`, and optional `minecraftVersion`) or `undefined` if no matching versions are found or an error occurs
  */
-export default function fabricAdapter(config: FabricAdapterConfig): VersionInfoAdapter {
+export default function fabricAdapter(config?: FabricAdapterConfig): VersionInfoAdapter {
+    config = FabricAdapterConfigSchema.parse(config ?? {});
     return {
         async getLatestVersion(branch?: string) {
-            const jdlist = await fetchText(config.source);
+            const jdlist = await fetchText(config.source!);
             if (!jdlist) {
                 return undefined;
             }

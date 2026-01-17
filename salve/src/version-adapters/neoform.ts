@@ -55,7 +55,8 @@ function parseNeoFormVersion(version: string) {
  * @param config - Configuration for the adapter; `config.source` is the NeoForm releases URL and `config.stage` (if present) filters which release stages are considered.
  * @returns A VersionInfoAdapter whose `getLatestVersion` method yields the latest matching release info object ({ version, stage, minecraftVersion }) or `undefined` if no matching release is found or an error occurs.
  */
-export default function neoformAdapter(config: NeoFormAdapterConfig): VersionInfoAdapter {
+export default function neoformAdapter(config?: NeoFormAdapterConfig): VersionInfoAdapter {
+    config = NeoFormAdapterConfigSchema.parse(config ?? {});
     return {
         async getLatestVersion(branch?: string) {
             const json = await fetchJson(config.source);

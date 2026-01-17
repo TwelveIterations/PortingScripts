@@ -29,7 +29,8 @@ const ForgePromosResponseSchema = z.object({
  * @param config - Configuration for the adapter; `config.source` is the Forge promotions URL.
  * @returns A VersionInfoAdapter whose `getLatestVersion` method yields the latest matching release info object ({ version, stage, minecraftVersion }) or `undefined` if no matching release is found or an error occurs.
  */
-export default function forgeAdapter(config: ForgeAdapterConfig): VersionInfoAdapter {
+export default function forgeAdapter(config?: ForgeAdapterConfig): VersionInfoAdapter {
+    config = ForgeAdapterConfigSchema.parse(config ?? {});
     return {
         async getLatestVersion(branch?: string) {
             const json = await fetchJson(config.source);

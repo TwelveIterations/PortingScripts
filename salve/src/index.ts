@@ -14,6 +14,7 @@ import { pullRepos } from './commands/pull';
 import { dev } from './commands/dev';
 import { status } from './commands/status';
 import { push } from './commands/push';
+import { upgrade } from './commands/upgrade';
 
 const program = new Command();
 
@@ -159,5 +160,16 @@ program
   .argument('<branch>', 'Version branch (e.g., 1.20.1)')
   .option('--verbose', 'Show detailed debug logs')
   .action(push);
+
+program
+  .command('upgrade')
+  .description('upgrade gradle version catalog with latest versions')
+  .argument('<branch>', 'Version branch to upgrade (e.g., 1.20.1)')
+  .option('--org <organization>', 'GitHub organization name')
+  .option('--team <team>', 'Team name to filter repositories')
+  .option('--pattern <pattern>', 'Repository name pattern (regex)')
+  .option('--repo <repo>', 'Repository name (defaults to all)')
+  .option('--verbose', 'Show detailed debug logs')
+  .action(upgrade);
 
 program.parse();
