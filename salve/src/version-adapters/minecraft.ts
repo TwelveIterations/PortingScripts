@@ -47,7 +47,7 @@ function getVersionStage(id: string, type: string): string {
  * @returns A VersionInfoAdapter whose `getLatestVersion` method returns the latest matching version info or `undefined` if no matching versions are found or an error occurs
  */
 export default function minecraftAdapter(config?: MinecraftAdapterConfig): VersionInfoAdapter {
-    config = MinecraftAdapterConfigSchema.parse(config);
+    config = MinecraftAdapterConfigSchema.parse(config || {});
     return {
         async getLatestVersion(branch?: string): Promise<VersionInfo | undefined> {
             const json = await fetchJson(config.source);
