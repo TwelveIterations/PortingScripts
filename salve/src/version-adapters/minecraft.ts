@@ -4,7 +4,7 @@ import { fetchJson } from "./fetch";
 
 export const MinecraftAdapterConfigSchema = z.object({
     source: z.url().default("https://launchermeta.mojang.com/mc/game/version_manifest.json"),
-    stage: z.enum(["release", "rc", "pre", "snapshot"]).default("release"),
+    stage: z.enum(["release", "rc", "pre", "snapshot"]).optional(),
 });
 export type MinecraftAdapterConfig = z.infer<typeof MinecraftAdapterConfigSchema>;
 
@@ -63,12 +63,10 @@ export default function minecraftAdapter(config?: MinecraftAdapterConfig): Versi
                 return undefined;
             }
 
-            const stage = config.stage;
-
             // Apply branch filtering if specified
             let filteredVersions: VersionInfo[] = [];
 
-            if (stage === "release") {
+            if (!branch && config.stage === "release") {
                 const releaseId = manifest.latest.release;
                 const releaseVersion = manifest.versions.find((v) => v.id === releaseId);
                 if (releaseVersion) {
@@ -80,7 +78,7 @@ export default function minecraftAdapter(config?: MinecraftAdapterConfig): Versi
                     };
                     filteredVersions.push(versionInfo);
                 }
-            } else if (stage === "snapshot") {
+            } else if (!branch && config.stage === "snapshot") {
                 // For snapshot stage, use latest.snapshot directly
                 const snapshotId = manifest.latest.snapshot;
                 const snapshotVersion = manifest.versions.find((v) => v.id === snapshotId);
@@ -99,12 +97,12 @@ export default function minecraftAdapter(config?: MinecraftAdapterConfig): Versi
                 const matchingVersions = manifest.versions
                     .filter((v) => {
                         const versionStage = getVersionStage(v.id, v.type);
-                        return versionStage === stage;
+                        return !config.stage || versionStage === config.stage;
                     })
                     .map((v) => ({
                         artifact: "minecraft",
                         version: v.id,
-                        stage,
+                        stage: config.stage ?? getVersionStage(v.id, v.type),
                         minecraftVersion: v.id,
                     }));
                 filteredVersions.push(...matchingVersions);
