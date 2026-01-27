@@ -17,7 +17,7 @@ import {
 } from "../utils/git-utils";
 import { existsSync } from "fs";
 import { join } from "path";
-import launchEditor from "launch-editor";
+import { launchIde } from "../utils/launch-ide";
 import { resolveRepositories, type RepoSelectionOptions } from "../utils/repo-selection";
 
 interface PatchOptions extends RepoSelectionOptions {
@@ -116,15 +116,13 @@ export async function patch(patch: string, branch: string, options: PatchOptions
           );
 
           if (openIDEPrompt) {
-            launchEditor(
-              localRepoPath,
-              config.ide,
-              (_fileName, errorMessage) => {
-                error(
-                  `Failed to open project with ${config.ide}: ${errorMessage}`
-                );
-              }
-            );
+            try {
+              await launchIde(localRepoPath);
+            } catch (err) {
+              error(
+                `Failed to open project with ${config.ide}: ${err}`
+              );
+            }
           }
           errorCount++;
         }

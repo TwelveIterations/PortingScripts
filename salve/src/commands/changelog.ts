@@ -3,6 +3,7 @@ import { loadConfig } from '../config';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import launchEditor from 'launch-editor';
+import { launchIde } from '../utils/launch-ide';
 import type { Commit } from '../utils/changelog-utils';
 import { error, success, info, warn, debug, promptUser, setVerboseMode } from '../utils/console';
 import { isVersionCommit, isChangelogCommit, generateChangelog } from '../utils/changelog-utils';
@@ -165,7 +166,7 @@ export async function changelog(repo: string, branch: string, options: Options):
       const shouldOpenProject = await promptUser('Do you want to open the project in your IDE now?', true);
       if (shouldOpenProject) {
         try {
-          launchEditor(repoPath, config.ide);
+          await launchIde(repoPath);
         } catch (err) {
           error(`Failed to open project with ${config.ide}: ${err}`);
         }

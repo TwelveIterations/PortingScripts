@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { loadConfig } from "../config";
 import { join } from "path";
 import { readdirSync, existsSync } from "fs";
-import launchEditor from "launch-editor";
+import { launchIde } from "../utils/launch-ide";
 import {
   error,
   success,
@@ -286,9 +286,9 @@ export async function dev(
   }
 
   info(`Opening repository in ${config.ide}...`);
-  launchEditor(repoPath, config.ide, (fileName, errorMessage) => {
-    error(
-      `Error opening repository ${fileName} with ${config.ide}: ${errorMessage}`
-    );
-  });
+  try {
+    await launchIde(repoPath);
+  } catch (err) {
+    error(`Failed to open repository: ${err}`);
+  }
 }
