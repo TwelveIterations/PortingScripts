@@ -19,7 +19,7 @@ export async function launchIde(folderPath: string): Promise<void> {
     info(`Opening folder in ${config.ide}...`);
     
     // Run the configured IDE command directly
-    const ideProcess = spawn(config.ide, [folderPath], {
+    const ideProcess = spawn(config.ide, [`"${folderPath}"`], {
       stdio: 'inherit',
       shell: true
     });
